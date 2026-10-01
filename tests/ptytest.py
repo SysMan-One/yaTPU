@@ -99,7 +99,7 @@ check('4 scratch buffer', 'Buffer: scratch' in screen(out) and 'created' in scre
 out = send(m, DO + 'help learn' + CR); sc = screen(out)
 check('4 help topic', sc.startswith('LEARN\n') and 'Topic?' in sc and '1 REMEMBER' not in sc, sc[:300])
 out = send(m, CR); sc = screen(out)                                # Return: back to the list of topics, in columns
-check('4 help list', 'Additional information available:' in sc and re.search(r'BUFFER\s+CHANGE MODE\s+DEFINE KEY', sc), sc[:600])
+check('4 help list', 'Additional information available:' in sc and re.search(r'BUFFER\s+CHANGE CASE\s+CHANGE MODE', sc), sc[:600])
 out = send(m, 'wild' + CR); sc = screen(out)                        # an abbreviation at the Topic? prompt
 check('4 help abbrev', sc.startswith('WILDCARD FIND\n'), sc[:200])
 out = send(m, CR); out = send(m, 'x' + CR); sc = screen(out)        # list, then an unknown topic
@@ -337,3 +337,21 @@ check('24 move by char, erase line', open(f).read() == 'abYXc\nghi\n', repr(open
 p, m = spawn(['t24.txt']); drain(m)
 send(m, '\x1b[B' + KP9 + GOLD + KPMINUS); send(m, CZ); finish(p, m)
 check('24 restore line', open(f).read() == 'abYXc\nghi\n', repr(open(f).read()))
+
+# 25. EDT's LINE, OPEN LINE, CHNGCASE, DEL EOL, as EDT on VMS does them: cursor on "f" of "five", the key, "X"
+KP0 = '\x1bOp'; KP1 = '\x1bOq'; KP2 = '\x1bOr'
+START = 'one two three' + CR + 'four five six' + CR + 'seven eight nine' + GOLD + KP5 + '\x1b[B' + RIGHT * 5
+for name, keys, want in (('KP0 next line start', KP0, 'one two three\nfour five six\nXseven eight nine\n'),
+                         ('KP0 reverse', KP5 + KP0, 'one two three\nXfour five six\nseven eight nine\n'),
+                         ('GOLD-KP0 open line', GOLD + KP0, 'one two three\nfour X\nfive six\nseven eight nine\n'),
+                         ('GOLD-KP1 change case', GOLD + KP1, 'one two three\nfour FXive six\nseven eight nine\n'),
+                         ('GOLD-KP2 erase to end', GOLD + KP2, 'one two three\nfour X\nseven eight nine\n'),
+                         ('GOLD-KP2 then RESTORE', GOLD + KP2 + GOLD + KPMINUS, 'one two three\nfour five sixX\nseven eight nine\n')):
+    f = os.path.join(W, 't25.txt'); open(f, 'w').close()
+    p, m = spawn(['t25.txt']); drain(m)
+    send(m, START); send(m, keys); send(m, 'X'); send(m, CZ); finish(p, m)
+    check('25 ' + name, open(f).read() == want, repr(open(f).read()))
+f = os.path.join(W, 't25.txt'); open(f, 'w').close()
+p, m = spawn(['t25.txt']); drain(m)
+send(m, 'мир Hello' + HOME + SEL + '\x1b[F' + GOLD + KP1); send(m, CZ); finish(p, m)
+check('25 change case selection', open(f).read() == 'МИР hELLO\n', repr(open(f).read()))

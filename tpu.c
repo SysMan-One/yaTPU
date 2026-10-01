@@ -1,6 +1,6 @@
 #define	__MODULE__	"TPU"
-#define	__IDENT__	"X-00-13"
-#define	__REV__		"00.13.00"
+#define	__IDENT__	"X-00-14"
+#define	__REV__		"00.14.00"
 
 /*
 **++
@@ -71,6 +71,11 @@
 **	01-OCT-2026	RRL	X-00-13 (REV 00.13.00) : "insert here пусть будет на insert, а DO на минус": KP- is DO again
 **				(KP7 and GOLD-Enter too, GOLD-KP- RESTORE), ERASE LINE moves to KP9 (GOLD-KP9 STORE TEXT),
 **				INSERT HERE stays on Insert and GOLD-KP6 only.
+**	01-OCT-2026	RRL	X-00-14 (REV 00.14.00) : Closer to EDT, as compared with EDT on the guest: KP0 is the new
+**				MOVE BY LINE START (EDT's LINE: start of the next line, of this or the previous one in
+**				reverse), GOLD-KP0 OPEN LINE, GOLD-KP1 CHANGE CASE (the selection, or the character under
+**				the cursor and a step on), GOLD-KP2 ERASE END OF LINE (EDT's DEL EOL, RESTORE brings it
+**				back). LINE stays on GOLD-L, REPLACE on GOLD-R, MOVE BY LINE has no default key.
 **
 **--
 */
@@ -2634,6 +2639,37 @@ TPU$LINE *	l_l = CURLINE(a_b);
 }
 
 /*
+ *  DESCRIPTION: EDT's LINE: going forward to the start of the next line (the end of the last one), in
+ *  reverse to the start of this line, or of the previous one when already there
+ *
+ *  INPUTS:
+ *	a_b		the buffer
+ *
+ *  OUTPUTS:
+ *	a_b		cursor moved
+ *
+ *  RETURNS: STS$K_SUCCESS
+ */
+static int	s_mv_by_line_start (
+	TPU$BUFFER	*a_b
+	)
+{
+	if ( !a_b->reverse )
+		{
+		if ( a_b->cur_line + 1 < a_b->nlines )
+			a_b->cur_line++, a_b->cur_col = 0;
+		else	a_b->cur_col = CURLINE(a_b)->len;
+		}
+	else	{
+		if ( !a_b->cur_col && a_b->cur_line )
+			a_b->cur_line--;
+		a_b->cur_col = 0;
+		}
+
+	return	STS$K_SUCCESS;
+}
+
+/*
  *  DESCRIPTION: Move one word in the buffer's direction: over the word (or one run of punctuation) and the
  *  spaces after it going forward, to the start of the previous word going in reverse
  *
@@ -4921,6 +4957,13 @@ static int	s_cmd_move_by_char (
 {
 	return	CURBUF->reverse ? s_mv_left(CURBUF) : s_mv_right(CURBUF);
 }
+/* MOVE BY LINE START: see s_mv_by_line_start(). RETURNS STS$K_SUCCESS */
+static int	s_cmd_move_by_line_start (
+	char	*a_arg
+	)
+{
+	return	s_mv_by_line_start(CURBUF);
+}
 /* MOVE BY LINE: see s_mv_by_line(). RETURNS STS$K_SUCCESS */
 static int	s_cmd_move_by_line (
 	char	*a_arg
@@ -5149,6 +5192,168 @@ static int	s_cmd_erase_sol (
 	)
 {
 	return	s_ed_erase_sol(CURBUF);
+}
+
+/*
+ *  DESCRIPTION: ERASE END OF LINE: from the cursor to the end of the line, the line break stays (EDT's DEL EOL);
+ *  the text is kept for RESTORE
+ *
+ *  INPUTS:
+ *	a_arg		ignored
+ *
+ *  OUTPUTS:
+ *	the current buffer	modified
+ *
+ *  IMPLICIT INPUTS/OUTPUTS:
+ *	s_restorebuf	the erased text
+ *
+ *  RETURNS: STS$K_SUCCESS, or STS$K_ERROR for a read-only buffer
+ */
+static int	s_cmd_erase_eol (
+	char	*a_arg
+	)
+{
+TPU$BUFFER *l_b = CURBUF;
+TPU$LINE *	l_l = CURLINE(l_b);
+unsigned l_col = $MIN(l_b->cur_col, l_l->len);
+
+	if ( TPU$FAILED(s_buf_writable(l_b)) )
+		return	STS$K_ERROR;
+
+	if ( l_col == l_l->len )
+		return	STS$K_SUCCESS;
+
+	s_ed_save_restore(l_l->text + l_col, l_l->len - l_col);
+	l_l->len = l_col;
+	l_b->cur_col = l_col;
+	s_buf_touch(l_b);
+
+	return	STS$K_SUCCESS;
+}
+
+/*
+ *  DESCRIPTION: OPEN LINE: break the line at the cursor and leave the cursor where it was, before the break
+ *  (EDT's OPEN LINE)
+ *
+ *  INPUTS:
+ *	a_arg		ignored
+ *
+ *  OUTPUTS:
+ *	the current buffer	modified
+ *
+ *  RETURNS: the status of s_ed_newline()
+ */
+static int	s_cmd_open_line (
+	char	*a_arg
+	)
+{
+TPU$BUFFER *l_b = CURBUF;
+unsigned l_line = l_b->cur_line, l_col = $MIN(l_b->cur_col, CURLINE(l_b)->len);
+int	l_status;
+
+	if ( TPU$FAILED(l_status = s_ed_newline(l_b)) )
+		return	l_status;
+
+	l_b->cur_line = l_line;
+	l_b->cur_col = l_col;
+
+	return	l_status;
+}
+
+/*
+ *  DESCRIPTION: Swap the case of the characters of one line between two byte offsets; a character whose other
+ *  case is longer or shorter in UTF-8 is spliced in, so the end offset may move
+ *
+ *  INPUTS:
+ *	a_l		the line
+ *	a_from		first byte
+ *	a_to		byte after the last one
+ *
+ *  OUTPUTS:
+ *	a_l		modified
+ *
+ *  RETURNS: the end offset after the change
+ */
+static unsigned	s_case_swap (
+	TPU$LINE	*a_l,
+	unsigned	a_from,
+	unsigned	a_to
+	)
+{
+char	l_enc[8];
+int	l_n, l_m;
+wchar_t	l_wc;
+
+	for ( unsigned l_i = a_from; l_i < $MIN(a_to, a_l->len); l_i += l_m )
+		{
+		l_n = s_utf8_len(a_l->text + l_i, a_l->len - l_i);
+		l_wc = s_utf8_decode(a_l->text + l_i, l_n);
+		l_wc = iswupper(l_wc) ? towlower(l_wc) : towupper(l_wc);
+		l_m = s_utf8_encode(l_wc, l_enc);
+
+		if ( l_m == l_n )
+			memcpy(a_l->text + l_i, l_enc, l_m);
+		else	{
+			s_line_del(a_l, l_i, l_n);
+			s_line_ins(a_l, l_i, l_enc, l_m);
+			a_to = a_to + l_m - l_n;
+			}
+		}
+
+	return	a_to;
+}
+
+/*
+ *  DESCRIPTION: CHANGE CASE: swap upper and lower case in the selection and cancel it; with no selection, of the
+ *  character under the cursor, then step one character in the current direction (EDT's CHNGCASE)
+ *
+ *  INPUTS:
+ *	a_arg		ignored
+ *
+ *  OUTPUTS:
+ *	the current buffer	modified
+ *
+ *  RETURNS: STS$K_SUCCESS, or STS$K_ERROR for a read-only buffer
+ */
+static int	s_cmd_change_case (
+	char	*a_arg
+	)
+{
+TPU$BUFFER *l_b = CURBUF;
+TPU$LINE *	l_l = CURLINE(l_b);
+TPU$POS	l_from, l_to;
+
+	if ( TPU$FAILED(s_buf_writable(l_b)) )
+		return	STS$K_ERROR;
+
+	if ( s_sel_bounds(l_b, &l_from, &l_to) )
+		{
+		for ( unsigned l_i = l_from.line; l_i <= l_to.line; l_i++ )
+			s_case_swap(l_b->lines[l_i], l_i == l_from.line ? l_from.col : 0,
+				l_i == l_to.line ? l_to.col : l_b->lines[l_i]->len);
+
+		l_b->mark_line = l_b->mark_col = -1;
+		s_buf_touch(l_b);
+
+		return	STS$K_SUCCESS;
+		}
+
+	if ( l_b->cur_col < l_l->len )
+		{
+		unsigned l_col = l_b->cur_col;
+
+		l_b->cur_col = s_case_swap(l_l, l_col, l_col + s_utf8_len(l_l->text + l_col, l_l->len - l_col));
+		s_buf_touch(l_b);
+
+		if ( l_b->reverse )
+			{
+			l_b->cur_col = l_col;
+			s_mv_left(l_b);
+			}
+		}
+	else	s_mv_right(l_b);
+
+	return	STS$K_SUCCESS;
 }
 
 /*
@@ -5860,12 +6065,14 @@ static int	s_cmd_quit (
 static const TPU$CMD s_cmds[] = {
 	{"BOTTOM",		s_cmd_bottom,		CMD$M_NAV, "Move to the end of the buffer"},
 	{"BUFFER",		s_cmd_buffer,		0, "Switch to a buffer, creating it if needed; no name - previous buffer"},
+	{"CHANGE CASE",		s_cmd_change_case,	0, "Swap the case of the selection, or of the character under the cursor"},
 	{"CHANGE MODE",		s_cmd_change_mode,	0, "Toggle between insert and overstrike"},
 	{"DEFINE KEY",		s_cmd_define_key,		0, "Bind a command to a key"},
 	{"DELETE BUFFER",	s_cmd_delete_buffer,	0, "Delete a buffer"},
 	{"DO",			s_cmd_do,			0, "Prompt for a command"},
 	{"END OF LINE",		s_cmd_end_of_line,	CMD$M_NAV, "Move to the end of the current line"},
 	{"ERASE CHARACTER",	s_cmd_erase_char,		0, "Erase the character under the cursor"},
+	{"ERASE END OF LINE",	s_cmd_erase_eol,		0, "Erase from the cursor to the end of the line"},
 	{"ERASE LINE",		s_cmd_erase_line,		0, "Erase the current line"},
 	{"ERASE PREVIOUS",	s_cmd_erase_previous,	0, "Erase the character before the cursor"},
 	{"ERASE START OF LINE",	s_cmd_erase_sol,		0, "Erase from the start of the line to the cursor"},
@@ -5886,6 +6093,7 @@ static const TPU$CMD s_cmds[] = {
 	{"LOAD KEYS",		s_cmd_load_keys,	0, "Read key definitions from a file"},
 	{"MOVE BY CHAR",	s_cmd_move_by_char,	CMD$M_NAV, "Move a character in the current direction"},
 	{"MOVE BY LINE",	s_cmd_move_by_line,	CMD$M_NAV, "Move to the end (start) of the line in the current direction"},
+	{"MOVE BY LINE START",	s_cmd_move_by_line_start, CMD$M_NAV, "Move to the start of the next (previous) line, as EDT's LINE"},
 	{"MOVE BY WORD",	s_cmd_move_by_word,	CMD$M_NAV, "Move a word in the current direction"},
 	{"NEXT WORD",		s_cmd_next_word,	CMD$M_NAV, "Move a word forward, whatever the direction"},
 	{"MOVE DOWN",		s_cmd_move_down,		CMD$M_NAV, "Move the cursor down"},
@@ -5894,6 +6102,7 @@ static const TPU$CMD s_cmds[] = {
 	{"MOVE UP",		s_cmd_move_up,		CMD$M_NAV, "Move the cursor up"},
 	{"NEXT SCREEN",		s_cmd_next_screen,	CMD$M_NAV, "Scroll one screen forward"},
 	{"ONE WINDOW",		s_cmd_one_window,		0, "Back to a single window"},
+	{"OPEN LINE",		s_cmd_open_line,		0, "Break the line at the cursor, the cursor stays before the break"},
 	{"OTHER WINDOW",	s_cmd_other_window,	0, "Move the cursor to the other window"},
 	{"OVERSTRIKE MODE",	s_cmd_overstrike_mode,	0, "Set overstrike mode"},
 	{"PREVIOUS SCREEN",	s_cmd_prev_screen,	CMD$M_NAV, "Scroll one screen back"},
@@ -5925,7 +6134,7 @@ static const TPU$CMD s_cmds[] = {
 static const struct { int key; const char *cmd; } s_defkeys[] = {
 	{KEY_PF1, "HELP"},		{KEY_KPSLASH, "GOLD"},		{KEY_KPSTAR, "FIND NEXT"},	{KEY_KPMINUS, "DO"},
 	{KEY_KPPLUS, "ERASE CHARACTER"},
-	{KEY_KP0, "MOVE BY LINE"},	{KEY_KP1, "MOVE BY WORD"},	{KEY_KP2, "END OF LINE"},	{KEY_KP3, "MOVE BY CHAR"},
+	{KEY_KP0, "MOVE BY LINE START"},	{KEY_KP1, "MOVE BY WORD"},	{KEY_KP2, "END OF LINE"},	{KEY_KP3, "MOVE BY CHAR"},
 	{KEY_KP4, "FORWARD"},		{KEY_KP5, "REVERSE"},		{KEY_KP6, "REMOVE"},		{KEY_KP7, "DO"},
 	{KEY_KP8, "NEXT SCREEN"},	{KEY_KP9, "ERASE LINE"},	{KEY_KPCOMMA, "ERASE CHARACTER"},
 	{KEY_KPPERIOD, "SELECT"},	{KEY_KPENTER, "RETURN"},
@@ -5935,7 +6144,7 @@ static const struct { int key; const char *cmd; } s_defkeys[] = {
 	{0x01, "CHANGE MODE"},		{0x05, "END OF LINE"},		{0x08, "START OF LINE"},	{0x0a, "ERASE WORD"},
 	{0x0b, "LEARN"},		{0x12, "REMEMBER"},		{0x15, "ERASE START OF LINE"},	{0x17, "REFRESH"},
 	{0x1a, "EXIT"},			{0x7f, "ERASE PREVIOUS"},	{0x0d, "RETURN"},		{0x09, "TAB"},
-	{TPU$M_GOLD | KEY_KP0, "LINE"},		{TPU$M_GOLD | KEY_KP1, "REPLACE"},	{TPU$M_GOLD | KEY_KP2, "ERASE LINE"},
+	{TPU$M_GOLD | KEY_KP0, "OPEN LINE"},	{TPU$M_GOLD | KEY_KP1, "CHANGE CASE"},	{TPU$M_GOLD | KEY_KP2, "ERASE END OF LINE"},
 	{TPU$M_GOLD | KEY_KP4, "BOTTOM"},	{TPU$M_GOLD | KEY_KP5, "TOP"},		{TPU$M_GOLD | KEY_KP6, "INSERT HERE"},
 	{TPU$M_GOLD | KEY_KP7, "SHOW BUFFERS"},	{TPU$M_GOLD | KEY_KP8, "PREVIOUS SCREEN"}, {TPU$M_GOLD | KEY_KP9, "STORE TEXT"},
 	{TPU$M_GOLD | KEY_KPMINUS, "RESTORE"},	{TPU$M_GOLD | KEY_KPCOMMA, "RESTORE"},	{TPU$M_GOLD | KEY_KPPERIOD, "RESET"},

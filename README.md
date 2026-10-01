@@ -58,10 +58,10 @@ Short form:
     KP/  GOLD                  KP*  FIND NEXT          KP-  DO                 KP+  ERASE CHARACTER
     KP7  DO                    KP8  NEXT SCREEN        KP9  ERASE LINE         KP,  ERASE CHARACTER (VT)
     KP4  FORWARD               KP5  REVERSE            KP6  REMOVE             Enter RETURN
-    KP1  MOVE BY WORD          KP2  END OF LINE        KP3  MOVE BY CHAR       KP0  MOVE BY LINE
+    KP1  MOVE BY WORD          KP2  END OF LINE        KP3  MOVE BY CHAR       KP0  MOVE BY LINE START
     KP.  SELECT
     Insert INSERT HERE   GOLD-KP4 BOTTOM   GOLD-KP5 TOP   GOLD-KP6 INSERT HERE   GOLD-KP8 PREVIOUS SCREEN   GOLD-KP* FIND
-    GOLD-KP- / GOLD-KP+ RESTORE   GOLD-Enter DO
+    GOLD-KP0 OPEN LINE   GOLD-KP1 CHANGE CASE   GOLD-KP2 ERASE END OF LINE   GOLD-KP- / GOLD-KP+ RESTORE   GOLD-Enter DO
     Find, Insert Here, Remove, Select, Prev/Next Screen, Home, End as labelled
     PC keypad without application mode: Esc GOLD, 5 SELECT, GOLD-Enter DO, GOLD-Home/End TOP/BOTTOM,
     GOLD-Left/Right PREVIOUS/NEXT WORD, GOLD-minus/plus REVERSE/FORWARD, GOLD-/ HELP, GOLD-* SHOW KEYS
@@ -91,9 +91,9 @@ At start `~/.tpu.keys`, `./tpu.keys` and the file from `-keys` or `TPU_KEYS` are
 
 Both paths must be absolute: the test starts the editor with the scratch directory as its working directory.
 
-Drives the editor in a pseudo-terminal through 24 scenarios (72 checks): editing and EXIT, LEARN/REPEAT,
-cut and paste, DO commands, kill -9 and `-recover`, SIGWINCH resize, two windows, REPLACE,
-UTF-8, recall, WILDCARD FIND, case-insensitive Cyrillic search and replace, the EDT keypad.
+Drives the editor in a pseudo-terminal through 25 scenarios (79 checks): editing and EXIT, LEARN/REPEAT,
+cut and paste, DO commands, the EDT keypad compared with EDT on VMS (LINE, OPEN LINE, CHNGCASE, DEL EOL), kill -9 and `-recover`, SIGWINCH resize, two windows, REPLACE,
+UTF-8, recall, WILDCARD FIND, case-insensitive Cyrillic search and replace.
 
     LANG=C.UTF-8 python3 TPU/tests/esctest.py $PWD/build-tpu/tpu /tmp/tpu-e [<yaVTERM build dir> | ssh | ssh:<host>]
 

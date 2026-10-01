@@ -116,10 +116,13 @@ Just type. Letters appear where the cursor is.
 | Erase the letter left of the cursor      | Backspace (Delete on a VT)             |
 | Erase the letter under the cursor        | Delete on a PC (Remove on a VT), KP+   |
 | Erase from the cursor to the end of word | Ctrl-J                                 |
-| Erase the whole line                     | KP9, GOLD KP2                          |
+| Erase the whole line                     | KP9                                    |
+| Erase from the cursor to the end of line | GOLD KP2 (ERASE END OF LINE)           |
 | Erase from the start of line to cursor   | Ctrl-U                                 |
 | Bring back the last erased text          | GOLD KP- or GOLD KP+ (RESTORE)         |
 | Insert / overstrike                      | Ctrl-A (CHANGE MODE)                   |
+| Swap case (selection or one letter)      | GOLD KP1 (CHANGE CASE)                 |
+| Break the line, the cursor stays         | GOLD KP0 (OPEN LINE)                   |
 | A TAB character                          | Tab                                    |
 
 RESTORE brings back only what was erased by "erase word", "erase line" and "erase start
@@ -143,11 +146,11 @@ character.
 | One screen back                         | Page Up, GOLD KP8                      |
 | Top of the text                         | GOLD KP5, GOLD Up                      |
 | End of the text                         | GOLD KP4, GOLD Down                    |
-| Line number N                           | GOLD KP0 or GOLD L, then the number    |
+| Line number N                           | GOLD L, then the number                |
 | One letter in the current direction     | KP3 (MOVE BY CHAR)                     |
 | One word in the current direction       | KP1                                    |
 | One word back / forward                 | GOLD Left / GOLD Right                 |
-| End (or start) of line                  | KP0 (MOVE BY LINE)                     |
+| Start of the next (previous) line       | KP0 (MOVE BY LINE START, EDT's LINE)  |
 | Direction forward                       | KP4, GOLD + (FORWARD)                  |
 | Direction reverse                       | KP5, GOLD - (REVERSE)                  |
 
@@ -239,7 +242,7 @@ To cancel a selection: SELECT again, or RESET (**GOLD KP.**).
 | `FIND string`           | Find, GOLD F, GOLD KP* | Search in the current direction           |
 | `FIND NEXT`             | KP*               | Search for the same string again               |
 | `WILDCARD FIND pattern` |                   | Find a line that matches the pattern as a whole|
-| `REPLACE old`           | GOLD R, GOLD KP1, GOLD Find | Replace, asking at every match       |
+| `REPLACE old`           | GOLD R, GOLD Find           | Replace, asking at every match       |
 
 The case rule is the EVE rule: if the search string has no capital letters, case does
 not matter. `world` finds `WORLD` and `World`. If there is at least one capital letter,
@@ -574,11 +577,11 @@ Short form. The full layout on PC keys is in [KEYS.txt](KEYS.txt); the live tabl
 `HELP KEYS`.
 
     F1   HELP                  KP/ / Esc  GOLD         KP*  FIND NEXT          KP-  DO
-    KP0  MOVE BY LINE          KP1  MOVE BY WORD       KP2  END OF LINE        KP3  MOVE BY CHAR
+    KP0  MOVE BY LINE START    KP1  MOVE BY WORD       KP2  END OF LINE        KP3  MOVE BY CHAR
     KP4  FORWARD               KP5  REVERSE            KP6  REMOVE             KP7  DO
     KP8  NEXT SCREEN           KP9  ERASE LINE         KP+  ERASE CHARACTER    KP,  ERASE CHARACTER
     KP.  SELECT                Enter RETURN
-    GOLD-KP0 LINE     GOLD-KP1 REPLACE   GOLD-KP2 ERASE LINE   GOLD-KP4 BOTTOM   GOLD-KP5 TOP
+    GOLD-KP0 OPEN LINE   GOLD-KP1 CHANGE CASE   GOLD-KP2 ERASE END OF LINE   GOLD-KP4 BOTTOM   GOLD-KP5 TOP
     GOLD-KP6 INSERT HERE   GOLD-KP7 SHOW BUFFERS   GOLD-KP8 PREVIOUS SCREEN   GOLD-KP9 STORE TEXT
     GOLD-KP- RESTORE   GOLD-KP+ RESTORE   GOLD-KP, RESTORE   GOLD-KP. RESET   GOLD-KP* FIND   GOLD-F1 SHOW KEYS
     Find FIND   Insert Here INSERT HERE   Remove REMOVE   Select SELECT   Prev/Next Screen

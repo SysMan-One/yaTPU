@@ -140,12 +140,14 @@ got = run(PROG, b'abc', [b'\x1bO', 0.4, b'x'])
 ref = run(TPU, b'abc', [b'\x1b', 0.4, b'O', 0.4, b'x'])
 failures += not check('4 Esc O pause x', got == ref, f'{got!r}, expected {ref!r}')
 
-# 5. The keypad through the link, whole and split: KP- DO, KP9 ERASE LINE, KP3 MOVE BY CHAR, KP/ GOLD, Insert pastes
+# 5. The keypad through the link, whole and split: KP- DO, KP9 ERASE LINE, KP3, KP0, GOLD-KP0/1/2, KP/ GOLD, Insert
 E = b'\x1b'
 base = run(TPU, INTRO, [])						# No key: each one below must change the result
 for name, seq, before, after in (('KP- DO top', b'Om', [], [b'top\r']), ('KP9 ERASE LINE', b'Oy', [], []),
                 ('KP3 MOVE BY CHAR', b'Os', [], []),
                 ('KP/ GOLD-X', b'Oo', [], [b'x']),
+                ('KP0 LINE START', b'Op', [], []), ('GOLD-KP0 OPEN LINE', b'Op', [E + b'Oo'], []),
+                ('GOLD-KP1 CHANGE CASE', b'Oq', [E + b'Oo'], []), ('GOLD-KP2 ERASE EOL', b'Or', [b'\x1b[D', E + b'Oo'], []),
                 ('Insert pastes', b'[2~', [E + b'On', b'\x1b[C\x1b[C', b'\x1b[3~', b'\x1b[F'], [])):
     ref = run(TPU, INTRO, before + [E + seq] + after)
     failures += not check(f'5 {name} has an effect', ref != base, repr(ref))

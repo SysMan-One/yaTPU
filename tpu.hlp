@@ -73,7 +73,7 @@
   REPLACE old
 
   Prompts for the new string, then stops at each match and asks:
-  Yes, No, All, Last or Quit. Keys: GOLD-KP1, GOLD-Find, GOLD-R.
+  Yes, No, All, Last or Quit. Keys: GOLD-Find, GOLD-R.
 
 1 SELECT
   Mark the start of a selection at the cursor, then move: the selected
@@ -127,11 +127,21 @@
 1 LINE
   LINE number
 
-  Go to a line. Keys: GOLD-KP0, GOLD-L.
+  Go to a line. Key: GOLD-L.
 
 1 MOVE BY LINE
   Move to the end of the line going forward, or to the start going in
-  reverse; at the end of a line it steps to the next one. Key: KP0.
+  reverse; at the end of a line it steps to the next one. No default
+  key: DO MOVE BY LINE, or DEFINE KEY.
+
+1 MOVE BY LINE START
+  EDT's LINE: going forward, to the start of the next line; in reverse,
+  to the start of this line, or of the previous one when already there.
+  Key: KP0.
+
+1 OPEN LINE
+  Break the line at the cursor; the cursor stays where it was, before
+  the break, as EDT's OPEN LINE. Key: GOLD-KP0.
 
 1 MOVE BY CHAR
   Move one character in the current direction, over line ends too, as
@@ -150,8 +160,10 @@
   The keypad in application mode, laid out the way EDT emulators put
   the VT keypad on a PC: the PF row on NumLock / * -, here moved off
   NumLock (a terminal never sends it) and HELP moved to F1. Close to
-  EDT: 3 moves a character, - and 7 are DO (EDT's GOLD-7 COMMAND),
-  9 erases a line; INSERT HERE is on the Insert key.
+  EDT: 3 moves a character, 0 to the next line, GOLD-0 opens a line,
+  GOLD-1 changes case, GOLD-2 erases to the end of the line; - and 7
+  are DO (EDT's GOLD-7 COMMAND), 9 erases a line; INSERT HERE is on
+  the Insert key.
 
       NumLock    /          *          -
       (none)     GOLD       FIND NEXT  DO
@@ -164,10 +176,10 @@
       G: BOTTOM  G: TOP     G: INS HR  RETURN
       1          2          3          G: DO
       WORD       END OF LN  CHAR
-      G: REPLACE G: ERASE L
+      G: CASE    G: ERASE EOL
       0                     .
-      MOVE BY LINE          SELECT
-      G: LINE               G: RESET
+      LINE START            SELECT
+      G: OPEN LINE          G: RESET
 
   F1 is HELP, GOLD-F1 SHOW KEYS. If / and * type text instead, your
   terminal ignores application mode: see HELP PC KEYPAD.
@@ -203,6 +215,12 @@
 1 REVERSE
   Set the direction to reverse. Key: KP5.
 
+1 CHANGE CASE
+  Swap upper and lower case in the selection; with no selection, of
+  the character under the cursor, then step one character in the
+  current direction, as EDT's CHNGCASE. Any script the locale knows.
+  Key: GOLD-KP1.
+
 1 CHANGE MODE
   Toggle between insert and overstrike. Keys: Ctrl-A.
 
@@ -212,7 +230,11 @@
 
 1 ERASE LINE
   Erase the whole current line; RESTORE (GOLD-KP-) brings it back.
-  Keys: KP9, GOLD-KP2.
+  Key: KP9.
+
+1 ERASE END OF LINE
+  Erase from the cursor to the end of the line; the line break stays,
+  as EDT's DEL EOL. RESTORE (GOLD-KP-) brings it back. Key: GOLD-KP2.
 
 1 ERASE START OF LINE
   Erase from the start of the line to the cursor. Key: Ctrl-U.

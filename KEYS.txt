@@ -68,13 +68,13 @@ NUMERIC KEYPAD  --  application mode, NumLock has no effect
 +------------------+------------------+------------------+------------------+
 |        1         |        2         |        3         |      Enter       |
 |   MOVE BY WORD   |   END OF LINE    |   MOVE BY CHAR   |      RETURN      |
-|  GOLD: REPLACE   | GOLD: ERASE LINE |                  |     GOLD: DO     |
+| GOLD: CHANGE CASE|GOLD: ERASE TO EOL|                  |     GOLD: DO     |
 +------------------+------------------+------------------+------------------+
 
 +---------------+---------------+---------------+
 |       0       |   . (period)  | Enter (cont.) |
-|  MOVE BY LINE |     SELECT    |     RETURN    |
-|   GOLD: LINE  |  GOLD: RESET  |    GOLD: DO   |
+|  LINE START   |     SELECT    |     RETURN    |
+|GOLD: OPEN LINE|  GOLD: RESET  |    GOLD: DO   |
 +---------------+---------------+---------------+
 
 ------------------------------------------------------------------------------

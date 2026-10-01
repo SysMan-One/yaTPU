@@ -117,10 +117,13 @@ GOLD - это **KP/** (косая черта на цифровой клавиа�
 | Стереть букву слева от курсора     | Backspace (Delete на VT)                  |
 | Стереть букву под курсором         | Delete на PC (Remove на VT), KP+          |
 | Стереть слово от курсора до конца  | Ctrl-J                                    |
-| Стереть всю строку                 | KP9, GOLD KP2                             |
+| Стереть всю строку                 | KP9                                       |
+| Стереть от курсора до конца строки | GOLD KP2 (ERASE END OF LINE)              |
 | Стереть от начала строки до курсора| Ctrl-U                                    |
 | Вернуть последнее стёртое          | GOLD KP- или GOLD KP+ (RESTORE)           |
 | Вставка / замена                   | Ctrl-A (CHANGE MODE)                      |
+| Сменить регистр (выделение или букву)| GOLD KP1 (CHANGE CASE)                  |
+| Разорвать строку, курсор на месте  | GOLD KP0 (OPEN LINE)                      |
 | Символ табуляции                   | Tab                                       |
 
 RESTORE возвращает только то, что стёрли командами "стереть слово", "стереть строку"
@@ -144,11 +147,11 @@ RESTORE возвращает только то, что стёрли команд
 | На экран назад                        | Page Up, GOLD KP8                         |
 | В самое начало текста                 | GOLD KP5, GOLD Up                         |
 | В самый конец текста                  | GOLD KP4, GOLD Down                       |
-| На строку с номером N                 | GOLD KP0 или GOLD L, потом номер          |
+| На строку с номером N                 | GOLD L, потом номер                       |
 | На букву в текущем направлении        | KP3 (MOVE BY CHAR)                        |
 | На слово в текущем направлении        | KP1                                       |
 | На слово назад / вперёд               | GOLD Left / GOLD Right                    |
-| В конец (или начало) строки           | KP0 (MOVE BY LINE)                        |
+| В начало следующей (предыдущей) строки| KP0 (MOVE BY LINE START, как LINE в EDT)  |
 | Направление вперёд                    | KP4, GOLD + (FORWARD)                     |
 | Направление назад                     | KP5, GOLD - (REVERSE)                     |
 
@@ -239,7 +242,7 @@ WRITE FILE без имени пишет в файл буфера. С имене�
 | `FIND строка`        | Find, GOLD F, GOLD KP* | Искать в текущем направлении              |
 | `FIND NEXT`          | KP*               | Искать ту же строку дальше                     |
 | `WILDCARD FIND шаблон`|                  | Найти строку, подходящую под шаблон целиком    |
-| `REPLACE старое`     | GOLD R, GOLD KP1, GOLD Find | Заменить с вопросом на каждом месте  |
+| `REPLACE старое`     | GOLD R, GOLD Find           | Заменить с вопросом на каждом месте  |
 
 Правило регистра, как в EVE: если в строке поиска нет больших букв, регистр не важен.
 `мир` найдёт и `МИР`, и `Мир`. Если есть хоть одна большая буква, ищется точно так, как
@@ -574,11 +577,11 @@ F-клавишах по умолчанию ничего нет: команду �
 `HELP KEYS`.
 
     F1   HELP                  KP/ / Esc  GOLD         KP*  FIND NEXT          KP-  DO
-    KP0  MOVE BY LINE          KP1  MOVE BY WORD       KP2  END OF LINE        KP3  MOVE BY CHAR
+    KP0  MOVE BY LINE START    KP1  MOVE BY WORD       KP2  END OF LINE        KP3  MOVE BY CHAR
     KP4  FORWARD               KP5  REVERSE            KP6  REMOVE             KP7  DO
     KP8  NEXT SCREEN           KP9  ERASE LINE         KP+  ERASE CHARACTER    KP,  ERASE CHARACTER
     KP.  SELECT                Enter RETURN
-    GOLD-KP0 LINE     GOLD-KP1 REPLACE   GOLD-KP2 ERASE LINE   GOLD-KP4 BOTTOM   GOLD-KP5 TOP
+    GOLD-KP0 OPEN LINE   GOLD-KP1 CHANGE CASE   GOLD-KP2 ERASE END OF LINE   GOLD-KP4 BOTTOM   GOLD-KP5 TOP
     GOLD-KP6 INSERT HERE   GOLD-KP7 SHOW BUFFERS   GOLD-KP8 PREVIOUS SCREEN   GOLD-KP9 STORE TEXT
     GOLD-KP- RESTORE   GOLD-KP+ RESTORE   GOLD-KP, RESTORE   GOLD-KP. RESET   GOLD-KP* FIND   GOLD-F1 SHOW KEYS
     Find FIND   Insert Here INSERT HERE   Remove REMOVE   Select SELECT   Prev/Next Screen

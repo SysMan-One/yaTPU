@@ -1,7 +1,7 @@
 1 TPU
   TPU is a lightweight text editor in the spirit of DEC TPU/EVE.
   Text lives in buffers; a file is only an optional attribute of a
-  buffer. Commands are typed after the DO key (KP-, KP7 or
+  buffer. Commands are typed after the DO key (KP7 or
   GOLD-Enter) at the "Command:" prompt, any unambiguous abbreviation
   will do: "GET F foo.c", "SH B". GOLD is KP/ or Esc: press it, then
   the next key. F1 is HELP. EXIT (Ctrl-Z) writes and leaves, QUIT
@@ -133,6 +133,10 @@
   Move to the end of the line going forward, or to the start going in
   reverse; at the end of a line it steps to the next one. Key: KP0.
 
+1 MOVE BY CHAR
+  Move one character in the current direction, over line ends too, as
+  EDT's CHAR. Key: KP3.
+
 1 MOVE BY WORD
   Move one word in the current direction. Key: KP1.
 
@@ -145,10 +149,12 @@
 1 KEYPAD
   The keypad in application mode, laid out the way EDT emulators put
   the VT keypad on a PC: the PF row on NumLock / * -, here moved off
-  NumLock (a terminal never sends it) and HELP moved to F1.
+  NumLock (a terminal never sends it) and HELP moved to F1. The keys
+  do what EDT's do where TPU has the command: - erases a line, 3
+  moves a character, 7 is DO (EDT's GOLD-7 COMMAND).
 
       NumLock    /          *          -
-      (none)     GOLD       FIND NEXT  DO
+      (none)     GOLD       FIND NEXT  ERASE LINE
                             G: FIND    G: RESTORE
       7          8          9          +
       DO         NEXT SCR   INS HERE   ERASE CHAR
@@ -157,7 +163,7 @@
       FORWARD    REVERSE    REMOVE     Enter
       G: BOTTOM  G: TOP     G: INS HR  RETURN
       1          2          3          G: DO
-      WORD       END OF LN  RESET
+      WORD       END OF LN  CHAR
       G: REPLACE G: ERASE L
       0                     .
       MOVE BY LINE          SELECT
@@ -205,7 +211,8 @@
   RESTORE brings it back. Keys: Ctrl-J (Linefeed).
 
 1 ERASE LINE
-  Erase the whole current line; RESTORE brings it back. Key: GOLD-KP2.
+  Erase the whole current line; RESTORE (GOLD-KP-) brings it back.
+  Keys: KP-, GOLD-KP2.
 
 1 ERASE START OF LINE
   Erase from the start of the line to the cursor. Key: Ctrl-U.

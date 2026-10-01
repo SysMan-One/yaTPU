@@ -60,7 +60,7 @@ The screen has four parts:
     second line
     [End of file]
      Buffer: notes.txt*     | Insert | Forward | Line 2 of 3     <- status line
-    KP- DO  ^Z EXIT  F1 HELP  GOLD-k SHOW KEYS  Find FIND      <- key hints
+    KP7 DO  ^Z EXIT  F1 HELP  GOLD-k SHOW KEYS  Find FIND      <- key hints
     %TPU-S-READ, 2 lines read from file notes.txt              <- message line
 
 The **status line** shows:
@@ -116,7 +116,7 @@ Just type. Letters appear where the cursor is.
 | Erase the letter left of the cursor      | Backspace (Delete on a VT)             |
 | Erase the letter under the cursor        | Delete on a PC (Remove on a VT), KP+   |
 | Erase from the cursor to the end of word | Ctrl-J                                 |
-| Erase the whole line                     | GOLD KP2                               |
+| Erase the whole line                     | KP-, GOLD KP2                          |
 | Erase from the start of line to cursor   | Ctrl-U                                 |
 | Bring back the last erased text          | GOLD KP- or GOLD KP+ (RESTORE)         |
 | Insert / overstrike                      | Ctrl-A (CHANGE MODE)                   |
@@ -144,6 +144,7 @@ character.
 | Top of the text                         | GOLD KP5, GOLD Up                      |
 | End of the text                         | GOLD KP4, GOLD Down                    |
 | Line number N                           | GOLD KP0 or GOLD L, then the number    |
+| One letter in the current direction     | KP3 (MOVE BY CHAR)                     |
 | One word in the current direction       | KP1                                    |
 | One word back / forward                 | GOLD Left / GOLD Right                 |
 | End (or start) of line                  | KP0 (MOVE BY LINE)                     |
@@ -175,7 +176,7 @@ file, and that file becomes the buffer's file.
 Everything in the editor has a command name: `FIND`, `GET FILE`, `TWO WINDOWS` and so
 on. You can type any command in words.
 
-1. Press DO: **KP-** (the minus on the numeric keypad), **KP7** or **GOLD Enter**.
+1. Press DO: **KP7** (the 7 on the numeric keypad) or **GOLD Enter**.
 2. `Command:` appears at the bottom.
 3. Type the command and press Enter.
 
@@ -230,7 +231,7 @@ edited.
 5. Put the cursor where you want it and press INSERT HERE (**Insert Here**, **KP9**,
    **GOLD KP6**).
 
-To cancel a selection: SELECT again, or RESET (**KP3**, **GOLD KP.**).
+To cancel a selection: SELECT again, or RESET (**GOLD KP.**).
 
 ## 10. Find and replace
 
@@ -573,8 +574,8 @@ writes everything to `tpu.log` in the current directory.
 Short form. The full layout on PC keys is in [KEYS.txt](KEYS.txt); the live table is
 `HELP KEYS`.
 
-    F1   HELP                  KP/ / Esc  GOLD         KP*  FIND NEXT          KP-  DO
-    KP0  MOVE BY LINE          KP1  MOVE BY WORD       KP2  END OF LINE        KP3  RESET
+    F1   HELP                  KP/ / Esc  GOLD         KP*  FIND NEXT          KP-  ERASE LINE
+    KP0  MOVE BY LINE          KP1  MOVE BY WORD       KP2  END OF LINE        KP3  MOVE BY CHAR
     KP4  FORWARD               KP5  REVERSE            KP6  REMOVE             KP7  DO
     KP8  NEXT SCREEN           KP9  INSERT HERE        KP+  ERASE CHARACTER    KP,  ERASE CHARACTER
     KP.  SELECT                Enter RETURN

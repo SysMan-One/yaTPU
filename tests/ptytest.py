@@ -59,7 +59,7 @@ def screen(raw, rows=24, cols=80):
 def check(name, cond, extra=''):
     print(('PASS ' if cond else 'FAIL ') + name + ('' if cond else '  ' + extra))
 
-CZ = '\x1a'; CR = '\r'; DO = '\x1bOm'; F6 = '\x1b[17~'; CK = '\x0b'; CRr = '\x12'
+CZ = '\x1a'; CR = '\r'; DO = '\x1bOw'; F6 = '\x1b[17~'; CK = '\x0b'; CRr = '\x12'
 SEL = '\x1b[4~'; REM = '\x1b[3~'; INS = '\x1b[2~'; RIGHT = '\x1b[C'; HOME = '\x1b[H'; END = '\x1b[F'
 GOLD = '\x1bOo'
 
@@ -252,11 +252,11 @@ send(m, CR); send(m, CZ); finish(p, m)
 # 19. key hint line: nano style, follows DEFINE KEY, HINTS hides it and gives the row back to the text
 p, m = spawn([]); drain(m)
 out = drain(m); sc = screen(out).split('\n')
-check('19 hint line', sc[22].startswith('KP- DO  ^Z EXIT  F1 HELP  GOLD-k SHOW KEYS'), repr(sc[22]))
-out = send(m, DO + 'define key HELP' + CR); out = send(m, DO); sc = screen(out).split('\n')   # KP- taken: DO falls back to KP7
-check('19 hint follows define key', sc[22].startswith('KP7 DO  ^Z EXIT  F1 HELP'), repr(sc[22]))
-check('19 hint keys highlighted', b'\x1b[7mKP7\x1b[0m DO' in out, repr(out[-400:]))
-out = send(m, '\x1bOw' + 'hints' + CR); sc = screen(out).split('\n')   # KP7 is DO now
+check('19 hint line', sc[22].startswith('KP7 DO  ^Z EXIT  F1 HELP  GOLD-k SHOW KEYS'), repr(sc[22]))
+out = send(m, DO + 'define key HELP' + CR); out = send(m, DO); sc = screen(out).split('\n')   # KP7 taken: DO falls back to GOLD-Enter
+check('19 hint follows define key', sc[22].startswith('GOLD-Return DO  ^Z EXIT  F1 HELP'), repr(sc[22]))
+check('19 hint keys highlighted', b'\x1b[7mGOLD-Return\x1b[0m DO' in out, repr(out[-400:]))
+out = send(m, GOLD + CR + 'hints' + CR); sc = screen(out).split('\n')   # KP7 is HELP now, GOLD-Enter is DO
 check('19 hints off', 'Buffer: MAIN' in sc[22] and 'HINTSOFF' in sc[23], repr(sc[21:24]))
 send(m, CZ); finish(p, m)
 
@@ -325,3 +325,15 @@ check('23 loaded macros work', open(f).read() == 'x\nab\none\ntwo\n', repr(open(
 p, m = spawn(['-keys', kf, 't23.txt']); out = drain(m, 0.6)
 check('23 -keys at start', '1 bad lines' in screen(out), screen(out)[-200:])
 send(m, CZ); finish(p, m)
+
+# 24. EDT keypad: KP3 MOVE BY CHAR follows the direction (KP4 / KP5), KP- ERASE LINE, GOLD-KP- RESTORE
+f = os.path.join(W, 't24.txt'); open(f, 'w').close()
+KP3 = '\x1bOs'; KP4 = '\x1bOt'; KP5 = '\x1bOu'; KPMINUS = '\x1bOm'
+p, m = spawn(['t24.txt']); drain(m)
+send(m, 'abc' + CR + 'def' + CR + 'ghi' + GOLD + KP5)             # GOLD-KP5 TOP
+send(m, KP3 + KP3 + 'X' + KP5 + KP3 + 'Y' + KP4)                # -> abXc, back one: abYXc
+send(m, '\x1b[B' + KPMINUS); send(m, CZ); finish(p, m)
+check('24 move by char, erase line', open(f).read() == 'abYXc\nghi\n', repr(open(f).read()))
+p, m = spawn(['t24.txt']); drain(m)
+send(m, '\x1b[B' + KPMINUS + GOLD + KPMINUS); send(m, CZ); finish(p, m)
+check('24 restore line', open(f).read() == 'abYXc\nghi\n', repr(open(f).read()))

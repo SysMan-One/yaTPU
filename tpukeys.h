@@ -16,6 +16,8 @@
 **
 **	28-SEP-2026	RRL	X-00-06 (REV 00.06.00) : Initial revision, moved out of tpu.c for keycode.c.
 **	29-SEP-2026	RRL	X-00-07 (REV 00.07.00) : Begin (ESC [ E, ESC O E): the 5 of a PC keypad with NumLock off.
+**	01-OCT-2026	RRL	X-00-11 (REV 00.11.00) : PC keypad / * + in application mode (ESC O o, ESC O j, ESC O k) as
+**				KP/, KP*, KP+; PF1-PF4 are named F1-F4, as on the PC keyboard that sends the same codes.
 **
 **--
 */
@@ -28,10 +30,11 @@
 
 #define	TPU$KEYS \
 	X(CPR, "CPR")		X(UP, "Up")		X(DOWN, "Down")		X(LEFT, "Left")		X(RIGHT, "Right")	\
-	X(PF1, "PF1")		X(PF2, "PF2")		X(PF3, "PF3")		X(PF4, "PF4")					\
+	X(PF1, "F1")		X(PF2, "F2")		X(PF3, "F3")		X(PF4, "F4")					\
 	X(KP0, "KP0")		X(KP1, "KP1")		X(KP2, "KP2")		X(KP3, "KP3")		X(KP4, "KP4")		\
 	X(KP5, "KP5")		X(KP6, "KP6")		X(KP7, "KP7")		X(KP8, "KP8")		X(KP9, "KP9")		\
 	X(KPMINUS, "KP-")	X(KPCOMMA, "KP,")	X(KPPERIOD, "KP.")	X(KPENTER, "Enter")				\
+	X(KPSLASH, "KP/")	X(KPSTAR, "KP*")	X(KPPLUS, "KP+")							\
 	X(FIND, "Find")		X(INSERT, "Insert Here") X(REMOVE, "Remove")	X(SELECT, "Select")				\
 	X(PREV, "Prev Screen")	X(NEXT, "Next Screen")	X(HOME, "Home")		X(END, "End")		X(BEGIN, "Begin")	\
 	X(F6, "F6")		X(F7, "F7")		X(F8, "F8")		X(F9, "F9")		X(F10, "F10")		\
@@ -67,6 +70,7 @@ static const TPU$KEYSEQ s_keyseqs[] = {
 	{"\033Ot", KEY_KP4},	{"\033Ou", KEY_KP5},	{"\033Ov", KEY_KP6},	{"\033Ow", KEY_KP7},
 	{"\033Ox", KEY_KP8},	{"\033Oy", KEY_KP9},	{"\033Om", KEY_KPMINUS}, {"\033Ol", KEY_KPCOMMA},
 	{"\033On", KEY_KPPERIOD}, {"\033OM", KEY_KPENTER},
+	{"\033Oo", KEY_KPSLASH}, {"\033Oj", KEY_KPSTAR},	{"\033Ok", KEY_KPPLUS},			/* PC keypad / * +	*/
 	{"\033[1~", KEY_FIND},	{"\033[2~", KEY_INSERT}, {"\033[3~", KEY_REMOVE}, {"\033[4~", KEY_SELECT},
 	{"\033[5~", KEY_PREV},	{"\033[6~", KEY_NEXT},
 	{"\033[H", KEY_HOME},	{"\033OH", KEY_HOME},	{"\033[F", KEY_END},	{"\033OF", KEY_END},

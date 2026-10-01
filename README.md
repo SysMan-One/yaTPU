@@ -23,7 +23,7 @@ The key table `tpukeys.h` is shared with `keycode`, a utility that prints the by
   `REMEMBER` (Ctrl-R) binds them to a key, `REPEAT n` or GOLD-digits replays; the journal
   `<file>.tjl` is the same key stream and `-recover` replays it after a crash. A failing command
   stops any replay, so `REPEAT 999 <macro>` walks through a buffer until FIND fails.
-* **DO prompt** (PF4, F4, F16, KP7) with abbreviations: `GET F foo.c`, `SH B`, `TWO`.
+* **DO prompt** (KP-, KP7, GOLD-Enter) with abbreviations: `GET F foo.c`, `SH B`, `TWO`.
   Up/Down recall earlier answers.
 * **Windows follow the terminal.** Size comes from `TIOCGWINSZ`/`SIGWINCH`, with a DSR/CPR
   query as fallback for a real VT on a serial line. `TWO WINDOWS`, `OTHER WINDOW`, `ONE WINDOW`.
@@ -49,32 +49,38 @@ editor, every message code with what to do about it, and a troubleshooting secti
 
 ## Keys (defaults)
 
-See [`KEYS.txt`](KEYS.txt) for the full table laid out on a physical PC/xterm keyboard
-(VT220 names like PF1 or KP7 aren't printed on ordinary keycaps). Short form:
+See [`KEYS.txt`](KEYS.txt) for the full table laid out on a physical PC/xterm keyboard, `HELP KEYPAD`
+draws the keypad. The keypad follows EDT emulators on a PC, which put the VT's PF1-PF4 on NumLock / * -:
+NumLock never reaches a terminal program, so GOLD sits on / and HELP on F1, the only function key bound.
+Short form:
 
-    PF1 / F1 / KP-  GOLD       PF2 / F2  HELP          PF3 / F3  FIND NEXT     PF4 / F4  DO
-    KP0  MOVE BY LINE          KP1  MOVE BY WORD       KP2  END OF LINE        KP3  RESET
-    KP4  FORWARD               KP5  REVERSE            KP6  REMOVE             KP7  DO
-    KP8  NEXT SCREEN           KP9  INSERT HERE        KP-  GOLD               KP,  ERASE CHARACTER
-    KP.  SELECT                Enter RETURN
-    GOLD-KP4 BOTTOM   GOLD-KP5 TOP   GOLD-KP6 INSERT HERE   GOLD-KP8 PREVIOUS SCREEN   GOLD-KP- RESTORE
+    F1   HELP (GOLD: SHOW KEYS)
+    KP/  GOLD                  KP*  FIND NEXT          KP-  DO                 KP+  ERASE CHARACTER
+    KP7  DO                    KP8  NEXT SCREEN        KP9  INSERT HERE        KP,  ERASE CHARACTER (VT)
+    KP4  FORWARD               KP5  REVERSE            KP6  REMOVE             Enter RETURN
+    KP1  MOVE BY WORD          KP2  END OF LINE        KP3  RESET              KP0  MOVE BY LINE
+    KP.  SELECT
+    GOLD-KP4 BOTTOM   GOLD-KP5 TOP   GOLD-KP6 INSERT HERE   GOLD-KP8 PREVIOUS SCREEN   GOLD-KP* FIND
+    GOLD-KP- / GOLD-KP+ RESTORE   GOLD-Enter DO
     Find, Insert Here, Remove, Select, Prev/Next Screen, Home, End as labelled
     PC keypad without application mode: Esc GOLD, 5 SELECT, GOLD-Enter DO, GOLD-Home/End TOP/BOTTOM,
     GOLD-Left/Right PREVIOUS/NEXT WORD, GOLD-minus/plus REVERSE/FORWARD, GOLD-/ HELP, GOLD-* SHOW KEYS
-    Ctrl-J / F13 ERASE WORD   F10 / Ctrl-Z EXIT    GOLD-F10 QUIT    Ctrl-K LEARN    Ctrl-R REMEMBER    Ctrl-W REFRESH
+    Ctrl-J ERASE WORD   Ctrl-Z EXIT   Ctrl-K LEARN   Ctrl-R REMEMBER   Ctrl-W REFRESH
     Ctrl-A CHANGE MODE   Ctrl-U ERASE START OF LINE   Ctrl-E END OF LINE   Ctrl-H START OF LINE
     GOLD-letter: B BUFFER, D DEFINE KEY, F FIND, G GET FILE, H HELP, I INCLUDE FILE, K SHOW KEYS, L LINE,
                  O OTHER WINDOW, Q QUIT, R REPLACE, S SHOW BUFFERS, T TWO WINDOWS, W WRITE FILE,
                  X EXIT, Z ONE WINDOW
 
-`DEFINE KEY` rebinds anything; `SHOW KEYS` (GOLD-K, GOLD-F2) or `HELP KEYS` shows the current table.
+`DEFINE KEY` rebinds anything, F2-F12 included; `SHOW KEYS` (GOLD-K, GOLD-F1) or `HELP KEYS` shows the current table.
+If / and * of the keypad type text, the terminal ignores application keypad mode: Esc is GOLD then,
+and `keycode` shows what the keys send.
 
 ## Key files
 
 `SAVE KEYS` writes the live table, learned sequences included, as `tpu.keys`; `LOAD KEYS` reads one back.
 At start `~/.tpu.keys`, `./tpu.keys` and the file from `-keys` or `TPU_KEYS` are read in that order.
 
-    PF1, F1, Esc, KP-          = GOLD
+    KP/, Esc                   = GOLD
     GOLD-Left                  = PREVIOUS WORD
     F6                         = KEYS "ab{Return}{GOLD-KP1}"   ! a learned sequence
     GOLD-k                     = NONE                        ! unbinds
@@ -92,6 +98,6 @@ UTF-8, recall, WILDCARD FIND, case-insensitive Cyrillic search and replace.
     LANG=C.UTF-8 python3 TPU/tests/esctest.py $PWD/build-tpu/tpu /tmp/tpu-e [<yaVTERM build dir>]
 
 Keys whose escape sequence arrives split in time, ESC first and the rest 30 to 200 ms later, as a tunnel or a slow
-line delivers it: arrows in both forms, Home, End, Delete, F4, and Esc as GOLD followed by a letter fast or slow.
+line delivers it: arrows in both forms, Home, End, Delete, KP-, and Esc as GOLD followed by a letter fast or slow.
 Each result is compared with the same keys sent at once. Given a yaVTERM build directory (with `vtc` and `vtd`),
 the split runs go through the tunnel, `vtc` -> `vtd` on a free local port -> the editor.

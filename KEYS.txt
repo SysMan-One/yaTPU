@@ -3,28 +3,24 @@ TPU KEY REFERENCE  --  physical PC/xterm keys -> TPU commands
 generated from tpu.c: s_defkeys[] / s_keydef_defaults()
 ==============================================================================
 
-TPU speaks VT220/EDT: GOLD, PF1-PF4, KP0-KP9.  Ordinary keyboards are not
-labelled that way, so this sheet lays the bindings out on the keys that
-actually send those codes -- same physical position as on your keyboard.
+TPU speaks EDT/EVE: GOLD, a keypad, KP0-KP9.  The keypad is laid out the way
+EDT emulators put the VT keypad on a PC: the VT's PF row sits on NumLock / * -,
+here moved one key off NumLock (a terminal never sends NumLock), and HELP is F1.
+This sheet lays the bindings out on the keys that actually send those codes.
 
-Legend:  plain command   GOLD command (press PF1 / F1, keypad - or Esc first, then the key)
+Legend:  plain command   GOLD command (press keypad / or Esc first, then the key)
 
 ------------------------------------------------------------------------------
-FUNCTION ROW  (F1-F4 = PF1-PF4)
+FUNCTION ROW  (only F1 is bound; F1 sends the same code as the VT's PF1)
 ------------------------------------------------------------------------------
 
 +-------------+-------------+-------------+-------------+-------------+-------------+
 |      F1     |      F2     |      F3     |      F4     |      F5     |      F6     |
-|     PF1     |     PF2     |     PF3     |     PF4     |      --     |      --     |
-| GOLD prefix |     HELP    |  FIND NEXT  | DO cmd line |             |             |
-|             |GOLD:SHOW KEY|             |             |             |             |
+|     HELP    |      --     |      --     |      --     |      --     |      --     |
+|GOLD:SHOW KEY|             |             |             |             |             |
 +-------------+-------------+-------------+-------------+-------------+-------------+
 
-+---------------+---------------+---------------+---------------+---------------+---------------+
-|       F7      |       F8      |       F9      |      F10      |      F11      |      F12      |
-|       --      |       --      |       --      |      EXIT     |       --      | START OF LINE |
-|               |               |               |   GOLD: QUIT  |               |               |
-+---------------+---------------+---------------+---------------+---------------+---------------+
+F2-F12 have no default binding: free for DEFINE KEY (GOLD-D) or a key file.
 
 ------------------------------------------------------------------------------
 CURSOR & EDIT BLOCK
@@ -44,6 +40,8 @@ CURSOR & EDIT BLOCK
 
 ------------------------------------------------------------------------------
 NUMERIC KEYPAD  --  application mode, NumLock has no effect
+(if / and * type text, your terminal ignores application mode: see the next
+ keypad below and use Esc as GOLD; keycode shows what your keys send)
 (the "+" key is one tall key covering rows 2-3; "Enter" covers rows 4-5;
  "0" is a wide key covering the two left columns of the bottom row --
  widths below are not to scale, each box is one physical key)
@@ -51,8 +49,8 @@ NUMERIC KEYPAD  --  application mode, NumLock has no effect
 
 +---------------+---------------+---------------+---------------+
 |    NumLock    |       /       |       *       |       -       |
-|       --      |       --      |       --      |  GOLD prefix  |
-|               |               |               | GOLD: RESTORE |
+|       --      |  GOLD prefix  |   FIND NEXT   |       DO      |
+|               |               |   GOLD: FIND  | GOLD: RESTORE |
 +---------------+---------------+---------------+---------------+
 
 +--------------------+--------------------+--------------------+--------------------+
@@ -70,13 +68,13 @@ NUMERIC KEYPAD  --  application mode, NumLock has no effect
 +------------------+------------------+------------------+------------------+
 |        1         |        2         |        3         |      Enter       |
 |   MOVE BY WORD   |   END OF LINE    |      RESET       |      RETURN      |
-|  GOLD: REPLACE   | GOLD: ERASE LINE |                  |                  |
+|  GOLD: REPLACE   | GOLD: ERASE LINE |                  |     GOLD: DO     |
 +------------------+------------------+------------------+------------------+
 
 +---------------+---------------+---------------+
 |       0       |   . (period)  | Enter (cont.) |
 |  MOVE BY LINE |     SELECT    |     RETURN    |
-|   GOLD: LINE  |  GOLD: RESET  |               |
+|   GOLD: LINE  |  GOLD: RESET  |    GOLD: DO   |
 +---------------+---------------+---------------+
 
 ------------------------------------------------------------------------------
@@ -149,15 +147,16 @@ text, Enter is Return. NumLock on: plain digits. GOLD is Esc here.
 +---------------------------------------+-------------------+-------------------+
 
 ------------------------------------------------------------------------------
-VT220 EXTRAS (F13-F20) -- no key on a PC keyboard, same action reachable via:
+NO DEFAULT BINDING  -- F2-F20, Help, Do (VT220 keys); the actions are on:
 ------------------------------------------------------------------------------
 
-  F13 (ERASE WORD)     = Ctrl-J
-  F14 (CHANGE MODE)    = Ctrl-A
-  F15 "Help"           = PF2, GOLD-H
-  F16 "Do"             = PF4, keypad 7
-  F17 (SHOW BUFFERS)   = GOLD-S
-  F20 (OTHER WINDOW)   = GOLD-O
+  ERASE WORD           = Ctrl-J
+  CHANGE MODE          = Ctrl-A
+  HELP                 = F1, GOLD-H
+  DO                   = keypad -, keypad 7, GOLD-Enter
+  SHOW BUFFERS         = GOLD-S, GOLD-keypad 7
+  OTHER WINDOW         = GOLD-O
+  EXIT / QUIT          = Ctrl-Z, GOLD-X / GOLD-Q
 
 ------------------------------------------------------------------------------
 NOTES
@@ -166,7 +165,9 @@ NOTES
   (Linux console among them) send Home/End as the VT220 Find/Select codes
   instead. If Home/End do not move the cursor, use Ctrl-H / Ctrl-E, or
   GOLD-F for Find.
+* An emulator that maps NumLock to PF1 itself (Tera Term and the like)
+  sends the code of F1 for NumLock, so there NumLock is HELP, not GOLD.
 * This sheet is a snapshot of the default bindings. Press GOLD-K (or
-  GOLD-F2, or type SHOW KEYS after DO) inside TPU for the live table,
+  GOLD-F1, or type SHOW KEYS after DO) inside TPU for the live table,
   including anything redefined with GOLD-D / DEFINE KEY.
 

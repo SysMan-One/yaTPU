@@ -86,8 +86,8 @@ for key, f in (('Up', 'A'), ('Down', 'B'), ('Right', 'C'), ('Left', 'D')):
             got = run(PROG, INTRO, [b'\x1b', gap, seq])
             failures += not check(f'1 {key} ESC {form}{f} gap {int(gap * 1000)} ms', got == ref, f'{got!r}, expected {ref!r}')
 
-# 2. Other keys that are ESC sequences on a PC keyboard: Home, End, Delete, F4 (= PF4, DO; the prompt is cancelled)
-for key, seq, extra in (('Home', b'[H', b''), ('End', b'[F', b''), ('Delete', b'[3~', b''), ('F4', b'OS', b'\x15\r')):
+# 2. Other keys that are ESC sequences: Home, End, Delete, KP- (DO in application keypad mode; the prompt is cancelled)
+for key, seq, extra in (('Home', b'[H', b''), ('End', b'[F', b''), ('Delete', b'[3~', b''), ('KP-', b'Om', b'\x15\r')):
     ref = run(TPU, INTRO, [b'\x1b' + seq, extra])
     for gap in GAPS:
         got = run(PROG, INTRO, [b'\x1b', gap, seq, extra])

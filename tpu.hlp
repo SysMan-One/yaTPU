@@ -1,15 +1,17 @@
 1 TPU
   TPU is a lightweight text editor in the spirit of DEC TPU/EVE.
   Text lives in buffers; a file is only an optional attribute of a
-  buffer. Commands are typed after the DO key (PF4, F4, KP7 or
+  buffer. Commands are typed after the DO key (KP-, KP7 or
   GOLD-Enter) at the "Command:" prompt, any unambiguous abbreviation
-  will do: "GET F foo.c", "SH B". GOLD is PF1, F1, Esc or KP-: press
-  it, then the next key. EXIT (Ctrl-Z) writes and leaves, QUIT leaves.
+  will do: "GET F foo.c", "SH B". GOLD is KP/ or Esc: press it, then
+  the next key. F1 is HELP. EXIT (Ctrl-Z) writes and leaves, QUIT
+  (GOLD-Q) leaves.
   Every key is journaled into <file>.tjl; -recover replays it.
 
   At the "Topic?" prompt below type a topic, Return alone leaves.
-  HELP KEYS or SHOW KEYS (GOLD-K) lists the live key bindings, and
-  HELP PC KEYPAD explains a keypad without application mode.
+  HELP KEYS or SHOW KEYS (GOLD-K) lists the live key bindings, HELP
+  KEYPAD draws the keypad, and HELP PC KEYPAD explains a keypad
+  without application mode.
 
 1 BUFFER
   BUFFER name
@@ -39,7 +41,7 @@
 
 1 SHOW BUFFERS
   List all buffers with their size, file and state. Press Return to
-  come back. Also: F17, GOLD-KP7, GOLD-S.
+  come back. Also: GOLD-KP7, GOLD-S.
 
 1 DELETE BUFFER
   DELETE BUFFER name
@@ -49,11 +51,11 @@
 
 1 EXIT
   Write every modified buffer that has a file, ask about the others,
-  and leave. Keys: Ctrl-Z, F10, GOLD-X.
+  and leave. Keys: Ctrl-Z, GOLD-X.
 
 1 QUIT
   Leave without writing anything; asks for confirmation if something
-  was modified. Keys: GOLD-F10, GOLD-Q.
+  was modified. Keys: GOLD-Q.
 
 1 FIND
   FIND string
@@ -64,7 +66,7 @@
   upper-case letter matches exactly. Keys: Find, GOLD-F.
 
 1 FIND NEXT
-  Search again for the last string. Keys: PF3, F3, or Find with an
+  Search again for the last string. Keys: KP*, or Find with an
   empty answer.
 
 1 REPLACE
@@ -92,7 +94,7 @@
 
 1 RESTORE
   Insert back the text erased by the last ERASE WORD, ERASE LINE or
-  ERASE START OF LINE. Keys: GOLD-KP-, GOLD-KP,.
+  ERASE START OF LINE. Keys: GOLD-KP-, GOLD-KP+, GOLD-KP,.
 
 1 LEARN
   Start recording every key you press. Finish with Ctrl-R (REMEMBER),
@@ -119,7 +121,7 @@
 
 1 TWO WINDOWS
   Split the screen; both windows show the current buffer at first.
-  OTHER WINDOW (F20, GOLD-O) moves between them, ONE WINDOW (GOLD-Z)
+  OTHER WINDOW (GOLD-O) moves between them, ONE WINDOW (GOLD-Z)
   goes back. Keys: GOLD-T.
 
 1 LINE
@@ -139,6 +141,30 @@
 
 1 PREVIOUS WORD
   Move one word back whatever the direction is. Key: GOLD-Left.
+
+1 KEYPAD
+  The keypad in application mode, laid out the way EDT emulators put
+  the VT keypad on a PC: the PF row on NumLock / * -, here moved off
+  NumLock (a terminal never sends it) and HELP moved to F1.
+
+      NumLock    /          *          -
+      (none)     GOLD       FIND NEXT  DO
+                            G: FIND    G: RESTORE
+      7          8          9          +
+      DO         NEXT SCR   INS HERE   ERASE CHAR
+      G: SH BUF  G: PREV SC G: STORE   G: RESTORE
+      4          5          6
+      FORWARD    REVERSE    REMOVE     Enter
+      G: BOTTOM  G: TOP     G: INS HR  RETURN
+      1          2          3          G: DO
+      WORD       END OF LN  RESET
+      G: REPLACE G: ERASE L
+      0                     .
+      MOVE BY LINE          SELECT
+      G: LINE               G: RESET
+
+  F1 is HELP, GOLD-F1 SHOW KEYS. If / and * type text instead, your
+  terminal ignores application mode: see HELP PC KEYPAD.
 
 1 PC KEYPAD
   Most PC terminal emulators never switch the keypad to application
@@ -172,11 +198,11 @@
   Set the direction to reverse. Key: KP5.
 
 1 CHANGE MODE
-  Toggle between insert and overstrike. Keys: Ctrl-A, F14.
+  Toggle between insert and overstrike. Keys: Ctrl-A.
 
 1 ERASE WORD
   Erase from the cursor to the end of the word and the spaces after it;
-  RESTORE brings it back. Keys: Ctrl-J (Linefeed), F13.
+  RESTORE brings it back. Keys: Ctrl-J (Linefeed).
 
 1 ERASE LINE
   Erase the whole current line; RESTORE brings it back. Key: GOLD-KP2.
@@ -197,7 +223,7 @@
   the "Topic?" prompt takes the next topic; Return alone goes back to
   the list, Return at the list leaves; Ctrl-Z leaves at once. The
   navigation keys scroll. HELP KEYS is the live key table, the same
-  as SHOW KEYS. Keys: PF2, F2, GOLD-H, GOLD-?, GOLD-/.
+  as SHOW KEYS. Keys: F1, GOLD-H, GOLD-?, GOLD-/.
 
 1 HINTS
   Show or hide the key hint line above the message line: the key in
@@ -212,12 +238,12 @@
 
   One line per binding, "!" starts a comment:
 
-      PF1, F1, Esc, KP-          = GOLD
+      KP/, Esc                   = GOLD
       GOLD-Left                  = PREVIOUS WORD
       F6                         = KEYS "ab{Return}{GOLD-KP1}"
       GOLD-k                     = NONE       ! unbinds
 
-  Key names are those of SHOW KEYS (PF4, KP7, Insert Here, Begin,
+  Key names are those of SHOW KEYS (F1, KP7, Insert Here, Begin,
   Ctrl-K, Delete, Space, Return, Tab, Escape, a letter, #hex for
   anything else), several keys through a comma, a blank on both sides
   of "=". KEYS "..." is a learned sequence: text as itself, special
@@ -239,12 +265,12 @@
 
 1 KEYS
   Type HELP KEYS or SHOW KEYS to list the current key bindings.
-  Keys: GOLD-K, GOLD-PF2 (GOLD-F2).
+  Keys: GOLD-K, GOLD-F1.
 
 1 SHOW KEYS
   List every key with the command or learned sequence bound to it,
   as the table is right now. Press Return to come back.
-  Keys: GOLD-K, GOLD-PF2 (GOLD-F2). HELP KEYS shows the same list.
+  Keys: GOLD-K, GOLD-F1. HELP KEYS shows the same list.
 
 1 WILDCARD FIND
   WILDCARD FIND pattern
@@ -257,7 +283,7 @@
 
 1 RECALL
   In any prompt the Up and Down arrows (or Ctrl-B) recall previous
-  answers; Delete erases, Ctrl-U clears the line, Ctrl-Z or F10 cancels.
+  answers; Delete erases, Ctrl-U clears the line, Ctrl-Z cancels.
 
 1 MESSAGES
   Messages look like VMS condition messages:

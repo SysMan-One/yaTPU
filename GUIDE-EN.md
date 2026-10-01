@@ -60,7 +60,7 @@ The screen has four parts:
     second line
     [End of file]
      Buffer: notes.txt*     | Insert | Forward | Line 2 of 3     <- status line
-    PF4 DO  ^Z EXIT  PF2 HELP  GOLD-k SHOW KEYS  Find FIND     <- key hints
+    KP- DO  ^Z EXIT  F1 HELP  GOLD-k SHOW KEYS  Find FIND      <- key hints
     %TPU-S-READ, 2 lines read from file notes.txt              <- message line
 
 The **status line** shows:
@@ -88,12 +88,14 @@ The line `[End of file]` shows where the text ends. It is not part of the file.
 GOLD is a prefix key. It is like Shift, but you do not hold it: press it once, then press
 another key. This gives every key a second meaning.
 
-GOLD is **PF1** on a VT220 keyboard, **F1** on a normal keyboard, or **KP-** (the minus on the
-numeric keypad), or **Esc**. All four do the same.
+GOLD is **KP/** (the slash on the numeric keypad) or **Esc**. Both do the same.
 
-On a PC usually only Esc works: NumLock sends nothing, and the keypad minus sends a plain
-character in most emulators. Press Esc, release it, press the next key. No need to wait, and
-no need to hold Esc.
+The keypad follows EDT emulators on a PC: there the VT keys PF1 to PF4 sit on NumLock, /, *
+and -. A terminal never sends NumLock, so GOLD moved one key to the right, to /. HELP is F1.
+
+If the keypad slash types `/`, your terminal ignores the keypad mode (see "What to do if...").
+Then use Esc: press Esc, release it, press the next key. No need to wait, and no need to hold
+Esc.
 
 Example: `KP5` (the 5 on the numeric keypad) sets the direction to "reverse", and
 `GOLD` then `KP5` goes to the top of the text (TOP).
@@ -112,12 +114,12 @@ Just type. Letters appear where the cursor is.
 |------------------------------------------|----------------------------------------|
 | New line                                 | Enter                                  |
 | Erase the letter left of the cursor      | Backspace (Delete on a VT)             |
-| Erase the letter under the cursor        | Delete on a PC (Remove on a VT), KP,   |
-| Erase from the cursor to the end of word | Ctrl-J, F13                            |
+| Erase the letter under the cursor        | Delete on a PC (Remove on a VT), KP+   |
+| Erase from the cursor to the end of word | Ctrl-J                                 |
 | Erase the whole line                     | GOLD KP2                               |
 | Erase from the start of line to cursor   | Ctrl-U                                 |
-| Bring back the last erased text          | GOLD KP- (RESTORE)                     |
-| Insert / overstrike                      | Ctrl-A (CHANGE MODE), F14              |
+| Bring back the last erased text          | GOLD KP- or GOLD KP+ (RESTORE)         |
+| Insert / overstrike                      | Ctrl-A (CHANGE MODE)                   |
 | A TAB character                          | Tab                                    |
 
 RESTORE brings back only what was erased by "erase word", "erase line" and "erase start
@@ -135,7 +137,7 @@ character.
 |-----------------------------------------|----------------------------------------|
 | One character left / right              | Left / Right                           |
 | One line up / down                      | Up / Down                              |
-| Start of line                           | Home, Ctrl-H, F12                      |
+| Start of line                           | Home, Ctrl-H                           |
 | End of line                             | End, Ctrl-E, KP2                       |
 | One screen forward                      | Page Down, KP8                         |
 | One screen back                         | Page Up, GOLD KP8                      |
@@ -154,8 +156,8 @@ The direction is kept for every buffer and shown in the status line.
 
 | What you want                                    | Key                            |
 |--------------------------------------------------|--------------------------------|
-| Write everything and leave (EXIT)                | Ctrl-Z, F10, GOLD X            |
-| Leave without writing anything (QUIT)            | GOLD F10, GOLD Q               |
+| Write everything and leave (EXIT)                | Ctrl-Z, GOLD X                 |
+| Leave without writing anything (QUIT)            | GOLD Q                         |
 | Write the current buffer, stay (WRITE FILE)      | GOLD W                         |
 
 EXIT writes every changed buffer to its file and, after leaving, prints how many lines went
@@ -173,7 +175,7 @@ file, and that file becomes the buffer's file.
 Everything in the editor has a command name: `FIND`, `GET FILE`, `TWO WINDOWS` and so
 on. You can type any command in words.
 
-1. Press DO: **PF4**, **F4**, **KP7**, **F16** or **GOLD Enter**.
+1. Press DO: **KP-** (the minus on the numeric keypad), **KP7** or **GOLD Enter**.
 2. `Command:` appears at the bottom.
 3. Type the command and press Enter.
 
@@ -187,7 +189,7 @@ In every question the editor asks, these keys work:
 | Up / Down, Ctrl-B | Recall earlier answers                        |
 | Backspace         | Erase a letter                                |
 | Ctrl-U            | Erase the whole answer                        |
-| Ctrl-Z, F10, Esc  | Cancel the question                           |
+| Ctrl-Z, Esc       | Cancel the question                           |
 | Enter             | Done                                          |
 
 The full command list: DO, then `HELP`.
@@ -204,7 +206,7 @@ have a file, or may have none. The buffer `MAIN` is created when you start witho
 | `GET FILE name`     | GOLD G   | Read a file into a buffer named after the file and show it     |
 | `INCLUDE FILE name` | GOLD I   | Insert a file into the text at the cursor                      |
 | `WRITE FILE [name]` | GOLD W   | Write the buffer                                               |
-| `SHOW BUFFERS`      | GOLD S, F17, GOLD KP7 | List all buffers                                  |
+| `SHOW BUFFERS`      | GOLD S, GOLD KP7 | List all buffers                                       |
 | `DELETE BUFFER name`|          | Remove a buffer                                                |
 
 System buffers are always there:
@@ -234,8 +236,8 @@ To cancel a selection: SELECT again, or RESET (**KP3**, **GOLD KP.**).
 
 | Command                 | Key               | What it does                                   |
 |-------------------------|-------------------|------------------------------------------------|
-| `FIND string`           | Find, GOLD F      | Search in the current direction                |
-| `FIND NEXT`             | PF3, F3           | Search for the same string again               |
+| `FIND string`           | Find, GOLD F, GOLD KP* | Search in the current direction           |
+| `FIND NEXT`             | KP*               | Search for the same string again               |
 | `WILDCARD FIND pattern` |                   | Find a line that matches the pattern as a whole|
 | `REPLACE old`           | GOLD R, GOLD KP1, GOLD Find | Replace, asking at every match       |
 
@@ -263,7 +265,7 @@ replace this one and stop, `q` to stop. At the end you see `N replacements made`
 | Command         | Key           | What it does                                  |
 |-----------------|---------------|-----------------------------------------------|
 | `TWO WINDOWS`   | GOLD T        | Split the screen into two windows             |
-| `OTHER WINDOW`  | GOLD O, F20   | Move to the other window                      |
+| `OTHER WINDOW`  | GOLD O        | Move to the other window                      |
 | `ONE WINDOW`    | GOLD Z        | Back to one window                            |
 
 At first both windows show the same buffer. In any window you can do `BUFFER` or
@@ -302,12 +304,12 @@ a file at any time: `LOAD KEYS file`.
 
 The file is simple, one line per binding, `!` starts a comment:
 
-    PF1, F1, Esc, KP-          = GOLD
+    KP/, Esc                   = GOLD
     GOLD-Left                  = PREVIOUS WORD
     F6                         = KEYS "ab{Return}{GOLD-KP1}"   ! a recorded macro
     GOLD-k                     = NONE                        ! remove the binding
 
-Key names are those SHOW KEYS shows: `PF4`, `KP7`, `Insert Here`, `Begin`, `Ctrl-K`, `Delete`,
+Key names are those SHOW KEYS shows: `F1`, `KP7`, `Insert Here`, `Begin`, `Ctrl-K`, `Delete`,
 `Space`, `Return`, `Tab`, `Escape`, a letter, `#hex` for anything else. Several keys go through a
 comma, a blank on both sides of `=`. `KEYS "..."` is a macro: text as itself, special keys in
 braces, a quote, a backslash and `{` written with a backslash before them. A bad line is reported
@@ -335,10 +337,10 @@ changed since, the replay may stop with `RECOVSTOP`.
 | `HELP`               | General help and the list of topics        |
 | `HELP LEARN`         | Help on one command                        |
 | `HELP KEYS`          | Every key binding, as it is right now      |
-| `SHOW KEYS`          | The same; keys GOLD K, GOLD F2             |
+| `SHOW KEYS`          | The same; keys GOLD K, GOLD F1             |
 | `HINTS`              | Hide or show the key hint line             |
 
-Keys: PF2, F2, GOLD H, GOLD ?. The key table: GOLD K or GOLD F2.
+Keys: F1, GOLD H, GOLD ?. The key table: GOLD K or GOLD F1.
 
 Help works like HELP on VMS. `HELP` without a topic shows the introduction and the list of topics
 in columns, with the `Topic?` prompt below. Type a topic, an abbreviation will do, and press Enter.
@@ -412,7 +414,7 @@ in the `MESSAGES` buffer.
 
 | Name       | Text                                 | What it means and what to do |
 |------------|--------------------------------------|------------------------------|
-| CANCEL     | E, `cancelled`                       | You cancelled a question (Ctrl-Z, Esc, F10). Nothing is broken. |
+| CANCEL     | E, `cancelled`                       | You cancelled a question (Ctrl-Z, Esc). Nothing is broken. |
 | UNKCMD     | E, `unknown command: X`              | No such command. DO, `HELP` shows the list. |
 | AMBCMD     | E, `ambiguous command: X`            | The short form fits several commands. Type more letters. |
 | KEYUNDEF   | E, `key X is not defined`            | Nothing is on that key. Define it: GOLD D. List: GOLD K. |
@@ -496,9 +498,16 @@ it there. The `-normal` option leaves the numeric keypad in its normal mode, to 
 
     ./build/keycode
     bytes                    as text              TPU key
-    1b 4f 53                 ESC O S              PF4
+    1b 4f 53                 ESC O S              F4
     1b 5b 36 7e              ESC [ 6 ~            Next Screen
     03                       ^C                   Ctrl-C
+
+**The keypad / and * type text, GOLD on KP/ does not work.** The terminal ignores the
+keypad mode. Use Esc as GOLD. Check with `keycode`: in the right mode the keypad slash sends
+`ESC O o`, the star `ESC O j`, the minus `ESC O m`, the plus `ESC O k`.
+
+**NumLock opens HELP.** Some emulators (Tera Term and the like) turn NumLock into the VT key
+PF1 by themselves. PF1 sends the same code as F1, and F1 is HELP. Use KP/ or Esc for GOLD.
 
 **The numeric keypad types digits instead of commands.** The terminal must send the
 "application mode" keypad codes. The editor turns that mode on, but most PC emulators do not
@@ -533,14 +542,14 @@ the window bigger.
 **I pressed GOLD and nothing happens.** The editor waits for the second key. Press it,
 or press something harmless like an arrow.
 
-**F1 to F4 do the wrong thing.** F1 to F4 act as PF1 to PF4 only when the terminal
-sends the VT220 codes for them (`ESC O P` and so on). Some terminals need a setting for
-that; otherwise use the GOLD-letter keys from the table.
+**F1 does not open HELP.** F1 works when the terminal sends `ESC O P` or `ESC [ 11 ~` for it.
+Some terminals need a setting for that; otherwise use GOLD H. The other F keys have no
+command by default: put one there with GOLD D (DEFINE KEY) or a key file.
 
 **Search in another language does not ignore case.** Start with `LANG=C.UTF-8`.
 Without a UTF-8 locale, only Latin letters are compared without case.
 
-**I cannot undo the last change.** There is no undo. RESTORE (GOLD KP-) brings back only
+**I cannot undo the last change.** There is no undo. RESTORE (GOLD KP-, GOLD KP+) brings back only
 the last erased word, line or start of line. If the file is not written yet, you can
 leave with QUIT and open it again.
 
@@ -564,20 +573,20 @@ writes everything to `tpu.log` in the current directory.
 Short form. The full layout on PC keys is in [KEYS.txt](KEYS.txt); the live table is
 `HELP KEYS`.
 
-    PF1 / F1 / KP- / Esc  GOLD  PF2 / F2  HELP          PF3 / F3  FIND NEXT     PF4 / F4  DO
+    F1   HELP                  KP/ / Esc  GOLD         KP*  FIND NEXT          KP-  DO
     KP0  MOVE BY LINE          KP1  MOVE BY WORD       KP2  END OF LINE        KP3  RESET
     KP4  FORWARD               KP5  REVERSE            KP6  REMOVE             KP7  DO
-    KP8  NEXT SCREEN           KP9  INSERT HERE        KP-  GOLD               KP,  ERASE CHARACTER
+    KP8  NEXT SCREEN           KP9  INSERT HERE        KP+  ERASE CHARACTER    KP,  ERASE CHARACTER
     KP.  SELECT                Enter RETURN
     GOLD-KP0 LINE     GOLD-KP1 REPLACE   GOLD-KP2 ERASE LINE   GOLD-KP4 BOTTOM   GOLD-KP5 TOP
     GOLD-KP6 INSERT HERE   GOLD-KP7 SHOW BUFFERS   GOLD-KP8 PREVIOUS SCREEN   GOLD-KP9 STORE TEXT
-    GOLD-KP- RESTORE   GOLD-KP, RESTORE   GOLD-KP. RESET
+    GOLD-KP- RESTORE   GOLD-KP+ RESTORE   GOLD-KP, RESTORE   GOLD-KP. RESET   GOLD-KP* FIND   GOLD-F1 SHOW KEYS
     Find FIND   Insert Here INSERT HERE   Remove REMOVE   Select SELECT   Prev/Next Screen
     Home START OF LINE   End END OF LINE   Up/Down/Left/Right   GOLD-Up TOP   GOLD-Down BOTTOM
     PC keypad: 5 SELECT   GOLD-5 RESET   GOLD-Enter DO   GOLD-Home TOP   GOLD-End BOTTOM
     GOLD-Left PREVIOUS WORD   GOLD-Right NEXT WORD   GOLD-Insert STORE TEXT
     GOLD-/ HELP   GOLD-* SHOW KEYS   GOLD-- REVERSE   GOLD-+ FORWARD
-    F10 / Ctrl-Z EXIT    GOLD-F10 QUIT    F12 START OF LINE
+    Ctrl-Z EXIT    GOLD-X EXIT    GOLD-Q QUIT    F2-F20: no command, free for DEFINE KEY
     Ctrl-A CHANGE MODE   Ctrl-E END OF LINE   Ctrl-H START OF LINE   Ctrl-J ERASE WORD
     Ctrl-K LEARN   Ctrl-R REMEMBER   Ctrl-U ERASE START OF LINE   Ctrl-W REFRESH
     GOLD-letter: B BUFFER, D DEFINE KEY, F FIND, G GET FILE, H HELP, I INCLUDE FILE, K SHOW KEYS, L LINE,

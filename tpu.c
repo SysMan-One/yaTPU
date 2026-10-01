@@ -1,6 +1,6 @@
 #define	__MODULE__	"TPU"
-#define	__IDENT__	"X-00-10ECO1"
-#define	__REV__		"00.10.01"
+#define	__IDENT__	"X-00-11"
+#define	__REV__		"00.11.00"
 
 /*
 **++
@@ -60,6 +60,11 @@
 **				escape sequence is 250 ms instead of 80 (TPU$K_ESCWAIT), a key split by a tunnel (yaVTERM)
 **				or a slow line is no longer read as GOLD and stray letters. ESC followed by a byte that
 **				starts no sequence, or by one byte and then a pause, is GOLD and that key, not lost.
+**	01-OCT-2026	RRL	X-00-11 (REV 00.11.00) : "EDT-сдвиг, F-клавиши убрать все кроме F1" - the keypad for a PC:
+**				F1 is HELP (GOLD-F1 SHOW KEYS), the PF row moves to / * - the way EDT emulators put it on
+**				NumLock / * -, NumLock sending nothing: KP/ GOLD, KP* FIND NEXT (GOLD- FIND), KP- DO
+**				(GOLD- RESTORE), KP+ ERASE CHARACTER (GOLD- RESTORE) like the VT's KP,. F2-F20, Help and
+**				Do are no longer bound; Esc stays GOLD. The hint row shows F1 HELP and KP- DO.
 **
 **--
 */
@@ -1247,14 +1252,14 @@ int	l_sel = s_sel_bounds(l_b, &l_from, &l_to), l_a, l_z, l_attr;
 
 /* The commands worth a hint, in order of importance, with the key they usually sit on */
 static const struct { const char *cmd; int key; } s_hintcmds[] = {
-	{"DO", KEY_PF4},		{"EXIT", 0x1a},			{"HELP", KEY_PF2},		{"SHOW KEYS", TPU$M_GOLD | 'k'},
+	{"DO", KEY_KPMINUS},		{"EXIT", 0x1a},			{"HELP", KEY_PF1},		{"SHOW KEYS", TPU$M_GOLD | 'k'},
 	{"FIND", KEY_FIND},		{"REPLACE", TPU$M_GOLD | 'r'},	{"SELECT", KEY_SELECT},		{"REMOVE", KEY_REMOVE},
 	{"INSERT HERE", KEY_INSERT},	{"GET FILE", TPU$M_GOLD | 'g'},	{"WRITE FILE", TPU$M_GOLD | 'w'}, {"BUFFER", TPU$M_GOLD | 'b'},
 	{"QUIT", TPU$M_GOLD | 'q'},	{"LEARN", 0x0b},		{"TWO WINDOWS", TPU$M_GOLD | 't'},
 };
 
 /*
- *  DESCRIPTION: Build the key hint row, nano style: "PF4 DO  ^Z EXIT  ...", the key between TPU$K_MARK
+ *  DESCRIPTION: Build the key hint row, nano style: "KP- DO  ^Z EXIT  ...", the key between TPU$K_MARK
  *  bytes so that it is drawn in reverse video. Keys come from the live table: the usual key of a command is
  *  shown while it is still bound to it, otherwise the first key that is; a command with no key is left out.
  *  As many hints as fit the screen width are taken, in the order of s_hintcmds[]
@@ -3112,7 +3117,7 @@ static int	s_nhist;
 /*
  *  DESCRIPTION: Ask on the message line and read the answer through s_key_get(), so that it replays
  *  correctly. Return or Enter ends the answer, Delete erases, Up/Down and Ctrl-B recall earlier answers,
- *  Ctrl-U clears the line, Ctrl-Z, ESC, Ctrl-C and F10 cancel. Non-empty answers go into the recall ring
+ *  Ctrl-U clears the line, Ctrl-Z, ESC and Ctrl-C cancel. Non-empty answers go into the recall ring
  *
  *  INPUTS:
  *	a_label		the prompt
@@ -3163,7 +3168,7 @@ int	l_len = 0, l_k, l_h = s_nhist;
 			}
 		else if ( l_k == 0x15 )				/* Ctrl-U			*/
 			l_len = 0;
-		else if ( l_k == 0x1a || l_k == 0x1b || l_k == 0x03 || l_k == KEY_F10 )
+		else if ( l_k == 0x1a || l_k == 0x1b || l_k == 0x03 )
 			{
 			s_prompt_label = NULL;
 			return	s_tpu_msg(TPU$_CANCEL);
@@ -3447,7 +3452,7 @@ static const TPU$CMD *	s_cmd_by_name (
 
 /*
  *  DESCRIPTION: The inverse of s_key_name(): a key from its name. "GOLD-" prefix, a name from tpukeys.h
- *  (PF4, KP7, Insert Here, Begin), Delete, Space, Return, Tab, Escape or Esc, Ctrl-X or ^X, #hex, or a
+ *  (F4, KP7, Insert Here, Begin; PF1-PF4 for F1-F4 too), Delete, Space, Return, Tab, Escape or Esc, Ctrl-X or ^X, #hex, or a
  *  single character. Case does not matter for the names, it does for a single letter
  *
  *  INPUTS:
@@ -3484,6 +3489,10 @@ char	l_buf[32];
 	for ( int l_i = 0; l_i < (int) $ARRSZ(s_keynames); l_i++ )
 		if ( !strcasecmp(l_buf, s_keynames[l_i]) )
 			return	*a_key = l_gold | (TPU$K_KEYBASE + l_i), STS$K_SUCCESS;
+
+	if ( a_len == 3 && toupper((unsigned char) l_buf[0]) == 'P' && toupper((unsigned char) l_buf[1]) == 'F'
+		&& l_buf[2] >= '1' && l_buf[2] <= '4' )			/* VT names of F1-F4, as in older key files	*/
+		return	*a_key = l_gold | (KEY_PF1 + l_buf[2] - '1'), STS$K_SUCCESS;
 
 	if ( !strcasecmp(l_buf, "Delete") )
 		l_c = 127;
@@ -3969,7 +3978,7 @@ int	l_k;
  *  DESCRIPTION: Show a system buffer (HELP, $BUFFERS, $KEYS) in the current window. Without a prompt: until
  *  a key that is not a navigation command is pressed, that key is consumed. With a prompt (VMS HELP's
  *  "Topic? "): navigation keys scroll, printable keys type the answer, Delete erases, Ctrl-U clears, Return
- *  ends, Ctrl-Z, Ctrl-C and F10 cancel. The window's own buffer and scroll position are restored afterwards
+ *  ends, Ctrl-Z and Ctrl-C cancel. The window's own buffer and scroll position are restored afterwards
  *
  *  INPUTS:
  *	a_b		the buffer to show
@@ -4029,7 +4038,7 @@ int	l_k, l_len = 0, l_sts = STS$K_SUCCESS;
 		if ( l_k == 13 || l_k == 10 || l_k == KEY_KPENTER )
 			break;
 
-		if ( l_k == 0x1a || l_k == 0x03 || l_k == KEY_F10 )
+		if ( l_k == 0x1a || l_k == 0x03 )
 			{
 			l_sts = TPU$_CANCEL;
 			break;
@@ -5399,7 +5408,7 @@ int	l_k;
 
 /*
  *  DESCRIPTION: Build the $KEYS listing of the live key table (key name and command, or "(learned sequence)")
- *  and show it until a non-navigation key is pressed. Behind SHOW KEYS, HELP KEYS, GOLD-K and GOLD-PF2
+ *  and show it until a non-navigation key is pressed. Behind SHOW KEYS, HELP KEYS, GOLD-K and GOLD-F1
  *
  *  IMPLICIT INPUTS:
  *	s_keydefs, s_nkeydefs	the key table
@@ -5898,18 +5907,17 @@ static const TPU$CMD s_cmds[] = {
 	{"WRITE FILE",		s_cmd_write_file,		0, "Write the buffer to its file, or to a named file"},
 };
 
-/* Default bindings: VT220 keypad and function keys, EVE control keys, a few GOLD shortcuts */
+/* Default bindings: the keypad with the PF row on / * - of a PC (F1 is HELP), EVE control keys, GOLD shortcuts */
 static const struct { int key; const char *cmd; } s_defkeys[] = {
-	{KEY_PF1, "GOLD"},		{KEY_PF2, "HELP"},		{KEY_PF3, "FIND NEXT"},		{KEY_PF4, "DO"},
+	{KEY_PF1, "HELP"},		{KEY_KPSLASH, "GOLD"},		{KEY_KPSTAR, "FIND NEXT"},	{KEY_KPMINUS, "DO"},
+	{KEY_KPPLUS, "ERASE CHARACTER"},
 	{KEY_KP0, "MOVE BY LINE"},	{KEY_KP1, "MOVE BY WORD"},	{KEY_KP2, "END OF LINE"},	{KEY_KP3, "RESET"},
 	{KEY_KP4, "FORWARD"},		{KEY_KP5, "REVERSE"},		{KEY_KP6, "REMOVE"},		{KEY_KP7, "DO"},
-	{KEY_KP8, "NEXT SCREEN"},	{KEY_KP9, "INSERT HERE"},	{KEY_KPMINUS, "GOLD"},			{KEY_KPCOMMA, "ERASE CHARACTER"},
+	{KEY_KP8, "NEXT SCREEN"},	{KEY_KP9, "INSERT HERE"},	{KEY_KPCOMMA, "ERASE CHARACTER"},
 	{KEY_KPPERIOD, "SELECT"},	{KEY_KPENTER, "RETURN"},
 	{KEY_UP, "MOVE UP"},		{KEY_DOWN, "MOVE DOWN"},	{KEY_LEFT, "MOVE LEFT"},	{KEY_RIGHT, "MOVE RIGHT"},
 	{KEY_FIND, "FIND"},		{KEY_INSERT, "INSERT HERE"},	{KEY_REMOVE, "REMOVE"},		{KEY_SELECT, "SELECT"},
 	{KEY_PREV, "PREVIOUS SCREEN"},	{KEY_NEXT, "NEXT SCREEN"},	{KEY_HOME, "START OF LINE"},	{KEY_END, "END OF LINE"},
-	{KEY_F10, "EXIT"},		{KEY_F12, "START OF LINE"},	{KEY_F13, "ERASE WORD"},	{KEY_F14, "CHANGE MODE"},
-	{KEY_F15, "HELP"},		{KEY_F16, "DO"},		{KEY_F17, "SHOW BUFFERS"},	{KEY_F20, "OTHER WINDOW"},
 	{0x01, "CHANGE MODE"},		{0x05, "END OF LINE"},		{0x08, "START OF LINE"},	{0x0a, "ERASE WORD"},
 	{0x0b, "LEARN"},		{0x12, "REMEMBER"},		{0x15, "ERASE START OF LINE"},	{0x17, "REFRESH"},
 	{0x1a, "EXIT"},			{0x7f, "ERASE PREVIOUS"},	{0x0d, "RETURN"},		{0x09, "TAB"},
@@ -5917,11 +5925,12 @@ static const struct { int key; const char *cmd; } s_defkeys[] = {
 	{TPU$M_GOLD | KEY_KP4, "BOTTOM"},	{TPU$M_GOLD | KEY_KP5, "TOP"},		{TPU$M_GOLD | KEY_KP6, "INSERT HERE"},
 	{TPU$M_GOLD | KEY_KP7, "SHOW BUFFERS"},	{TPU$M_GOLD | KEY_KP8, "PREVIOUS SCREEN"}, {TPU$M_GOLD | KEY_KP9, "STORE TEXT"},
 	{TPU$M_GOLD | KEY_KPMINUS, "RESTORE"},	{TPU$M_GOLD | KEY_KPCOMMA, "RESTORE"},	{TPU$M_GOLD | KEY_KPPERIOD, "RESET"},
+	{TPU$M_GOLD | KEY_KPPLUS, "RESTORE"},	{TPU$M_GOLD | KEY_KPSTAR, "FIND"},
 	{TPU$M_GOLD | KEY_FIND, "REPLACE"},	{TPU$M_GOLD | KEY_REMOVE, "STORE TEXT"}, {TPU$M_GOLD | KEY_SELECT, "RESET"},
-	{TPU$M_GOLD | KEY_F10, "QUIT"},		{TPU$M_GOLD | KEY_UP, "TOP"},		{TPU$M_GOLD | KEY_DOWN, "BOTTOM"},
-	{TPU$M_GOLD | KEY_PF2, "SHOW KEYS"},	{TPU$M_GOLD | 'k', "SHOW KEYS"},
+	{TPU$M_GOLD | KEY_UP, "TOP"},		{TPU$M_GOLD | KEY_DOWN, "BOTTOM"},
+	{TPU$M_GOLD | KEY_PF1, "SHOW KEYS"},	{TPU$M_GOLD | 'k', "SHOW KEYS"},
 	/* PC keypad in an emulator without application keypad mode: the digits are the cursor block with
-	 * NumLock off, 5 is Begin, / * - + are text, Enter is Return, and PF1 has no key at all */
+	 * NumLock off, 5 is Begin, / * - + are text, Enter is Return: no GOLD on the keypad, Esc is GOLD */
 	{0x1b, "GOLD"},				{KEY_BEGIN, "SELECT"},			{TPU$M_GOLD | KEY_BEGIN, "RESET"},
 	{TPU$M_GOLD | 0x0d, "DO"},		{TPU$M_GOLD | KEY_KPENTER, "DO"},
 	{TPU$M_GOLD | KEY_HOME, "TOP"},		{TPU$M_GOLD | KEY_END, "BOTTOM"},

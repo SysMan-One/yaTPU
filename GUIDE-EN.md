@@ -60,7 +60,7 @@ The screen has four parts:
     second line
     [End of file]
      Buffer: notes.txt*     | Insert | Forward | Line 2 of 3     <- status line
-    KP7 DO  ^Z EXIT  F1 HELP  GOLD-k SHOW KEYS  Find FIND      <- key hints
+    KP- DO  ^Z EXIT  F1 HELP  GOLD-k SHOW KEYS  Find FIND      <- key hints
     %TPU-S-READ, 2 lines read from file notes.txt              <- message line
 
 The **status line** shows:
@@ -116,7 +116,7 @@ Just type. Letters appear where the cursor is.
 | Erase the letter left of the cursor      | Backspace (Delete on a VT)             |
 | Erase the letter under the cursor        | Delete on a PC (Remove on a VT), KP+   |
 | Erase from the cursor to the end of word | Ctrl-J                                 |
-| Erase the whole line                     | KP-, GOLD KP2                          |
+| Erase the whole line                     | KP9, GOLD KP2                          |
 | Erase from the start of line to cursor   | Ctrl-U                                 |
 | Bring back the last erased text          | GOLD KP- or GOLD KP+ (RESTORE)         |
 | Insert / overstrike                      | Ctrl-A (CHANGE MODE)                   |
@@ -176,7 +176,7 @@ file, and that file becomes the buffer's file.
 Everything in the editor has a command name: `FIND`, `GET FILE`, `TWO WINDOWS` and so
 on. You can type any command in words.
 
-1. Press DO: **KP7** (the 7 on the numeric keypad) or **GOLD Enter**.
+1. Press DO: **KP-** (the minus on the numeric keypad), **KP7** or **GOLD Enter**.
 2. `Command:` appears at the bottom.
 3. Type the command and press Enter.
 
@@ -228,8 +228,7 @@ edited.
 3. Move the cursor to the end of the piece. The selected text is shown in reverse video.
 4. Press REMOVE (**Remove**, **KP6**): the piece is cut into the `INSERT HERE` buffer.
    Or STORE TEXT (**GOLD Remove**, **GOLD KP9**): the piece is copied, the text stays.
-5. Put the cursor where you want it and press INSERT HERE (**Insert Here**, **KP9**,
-   **GOLD KP6**).
+5. Put the cursor where you want it and press INSERT HERE (**Insert**, **GOLD KP6**).
 
 To cancel a selection: SELECT again, or RESET (**GOLD KP.**).
 
@@ -574,10 +573,10 @@ writes everything to `tpu.log` in the current directory.
 Short form. The full layout on PC keys is in [KEYS.txt](KEYS.txt); the live table is
 `HELP KEYS`.
 
-    F1   HELP                  KP/ / Esc  GOLD         KP*  FIND NEXT          KP-  ERASE LINE
+    F1   HELP                  KP/ / Esc  GOLD         KP*  FIND NEXT          KP-  DO
     KP0  MOVE BY LINE          KP1  MOVE BY WORD       KP2  END OF LINE        KP3  MOVE BY CHAR
     KP4  FORWARD               KP5  REVERSE            KP6  REMOVE             KP7  DO
-    KP8  NEXT SCREEN           KP9  INSERT HERE        KP+  ERASE CHARACTER    KP,  ERASE CHARACTER
+    KP8  NEXT SCREEN           KP9  ERASE LINE         KP+  ERASE CHARACTER    KP,  ERASE CHARACTER
     KP.  SELECT                Enter RETURN
     GOLD-KP0 LINE     GOLD-KP1 REPLACE   GOLD-KP2 ERASE LINE   GOLD-KP4 BOTTOM   GOLD-KP5 TOP
     GOLD-KP6 INSERT HERE   GOLD-KP7 SHOW BUFFERS   GOLD-KP8 PREVIOUS SCREEN   GOLD-KP9 STORE TEXT

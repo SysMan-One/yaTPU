@@ -1,7 +1,7 @@
 1 TPU
   TPU is a lightweight text editor in the spirit of DEC TPU/EVE.
   Text lives in buffers; a file is only an optional attribute of a
-  buffer. Commands are typed after the DO key (KP7 or
+  buffer. Commands are typed after the DO key (KP-, KP7 or
   GOLD-Enter) at the "Command:" prompt, any unambiguous abbreviation
   will do: "GET F foo.c", "SH B". GOLD is KP/ or Esc: press it, then
   the next key. F1 is HELP. EXIT (Ctrl-Z) writes and leaves, QUIT
@@ -89,7 +89,7 @@
   Keys: GOLD-Remove, GOLD-KP9.
 
 1 INSERT HERE
-  Insert the INSERT HERE buffer at the cursor. Keys: Insert Here, KP9,
+  Insert the INSERT HERE buffer at the cursor. Keys: Insert (Insert Here),
   GOLD-KP6.
 
 1 RESTORE
@@ -149,15 +149,15 @@
 1 KEYPAD
   The keypad in application mode, laid out the way EDT emulators put
   the VT keypad on a PC: the PF row on NumLock / * -, here moved off
-  NumLock (a terminal never sends it) and HELP moved to F1. The keys
-  do what EDT's do where TPU has the command: - erases a line, 3
-  moves a character, 7 is DO (EDT's GOLD-7 COMMAND).
+  NumLock (a terminal never sends it) and HELP moved to F1. Close to
+  EDT: 3 moves a character, - and 7 are DO (EDT's GOLD-7 COMMAND),
+  9 erases a line; INSERT HERE is on the Insert key.
 
       NumLock    /          *          -
-      (none)     GOLD       FIND NEXT  ERASE LINE
+      (none)     GOLD       FIND NEXT  DO
                             G: FIND    G: RESTORE
       7          8          9          +
-      DO         NEXT SCR   INS HERE   ERASE CHAR
+      DO         NEXT SCR   ERASE LINE ERASE CHAR
       G: SH BUF  G: PREV SC G: STORE   G: RESTORE
       4          5          6
       FORWARD    REVERSE    REMOVE     Enter
@@ -212,7 +212,7 @@
 
 1 ERASE LINE
   Erase the whole current line; RESTORE (GOLD-KP-) brings it back.
-  Keys: KP-, GOLD-KP2.
+  Keys: KP9, GOLD-KP2.
 
 1 ERASE START OF LINE
   Erase from the start of the line to the cursor. Key: Ctrl-U.

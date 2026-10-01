@@ -23,7 +23,7 @@ The key table `tpukeys.h` is shared with `keycode`, a utility that prints the by
   `REMEMBER` (Ctrl-R) binds them to a key, `REPEAT n` or GOLD-digits replays; the journal
   `<file>.tjl` is the same key stream and `-recover` replays it after a crash. A failing command
   stops any replay, so `REPEAT 999 <macro>` walks through a buffer until FIND fails.
-* **DO prompt** (KP7, GOLD-Enter) with abbreviations: `GET F foo.c`, `SH B`, `TWO`.
+* **DO prompt** (KP-, KP7, GOLD-Enter) with abbreviations: `GET F foo.c`, `SH B`, `TWO`.
   Up/Down recall earlier answers.
 * **Windows follow the terminal.** Size comes from `TIOCGWINSZ`/`SIGWINCH`, with a DSR/CPR
   query as fallback for a real VT on a serial line. `TWO WINDOWS`, `OTHER WINDOW`, `ONE WINDOW`.
@@ -55,12 +55,12 @@ NumLock never reaches a terminal program, so GOLD sits on / and HELP on F1, the 
 Short form:
 
     F1   HELP (GOLD: SHOW KEYS)
-    KP/  GOLD                  KP*  FIND NEXT          KP-  ERASE LINE         KP+  ERASE CHARACTER
-    KP7  DO                    KP8  NEXT SCREEN        KP9  INSERT HERE        KP,  ERASE CHARACTER (VT)
+    KP/  GOLD                  KP*  FIND NEXT          KP-  DO                 KP+  ERASE CHARACTER
+    KP7  DO                    KP8  NEXT SCREEN        KP9  ERASE LINE         KP,  ERASE CHARACTER (VT)
     KP4  FORWARD               KP5  REVERSE            KP6  REMOVE             Enter RETURN
     KP1  MOVE BY WORD          KP2  END OF LINE        KP3  MOVE BY CHAR       KP0  MOVE BY LINE
     KP.  SELECT
-    GOLD-KP4 BOTTOM   GOLD-KP5 TOP   GOLD-KP6 INSERT HERE   GOLD-KP8 PREVIOUS SCREEN   GOLD-KP* FIND
+    Insert INSERT HERE   GOLD-KP4 BOTTOM   GOLD-KP5 TOP   GOLD-KP6 INSERT HERE   GOLD-KP8 PREVIOUS SCREEN   GOLD-KP* FIND
     GOLD-KP- / GOLD-KP+ RESTORE   GOLD-Enter DO
     Find, Insert Here, Remove, Select, Prev/Next Screen, Home, End as labelled
     PC keypad without application mode: Esc GOLD, 5 SELECT, GOLD-Enter DO, GOLD-Home/End TOP/BOTTOM,
@@ -95,9 +95,11 @@ Drives the editor in a pseudo-terminal through 24 scenarios (72 checks): editing
 cut and paste, DO commands, kill -9 and `-recover`, SIGWINCH resize, two windows, REPLACE,
 UTF-8, recall, WILDCARD FIND, case-insensitive Cyrillic search and replace, the EDT keypad.
 
-    LANG=C.UTF-8 python3 TPU/tests/esctest.py $PWD/build-tpu/tpu /tmp/tpu-e [<yaVTERM build dir>]
+    LANG=C.UTF-8 python3 TPU/tests/esctest.py $PWD/build-tpu/tpu /tmp/tpu-e [<yaVTERM build dir> | ssh]
 
 Keys whose escape sequence arrives split in time, ESC first and the rest 30 to 200 ms later, as a tunnel or a slow
-line delivers it: arrows in both forms, Home, End, Delete, KP7, and Esc as GOLD followed by a letter fast or slow.
+line delivers it: arrows in both forms, Home, End, Delete, KP-, and Esc as GOLD followed by a letter fast or slow;
+then the keypad itself (KP- DO, KP9 ERASE LINE, KP3, KP/ GOLD, Insert pasting), whole and split.
 Each result is compared with the same keys sent at once. Given a yaVTERM build directory (with `vtc` and `vtd`),
-the split runs go through the tunnel, `vtc` -> `vtd` on a free local port -> the editor.
+the split runs go through the tunnel, `vtc` -> `vtd` on a free local port -> the editor; given `ssh`, through
+OpenSSH, `ssh -tt` -> a private `sshd` with its own keys on a free local port -> the editor.

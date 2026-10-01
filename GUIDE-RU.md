@@ -60,7 +60,7 @@ TPU/EVE из системы OpenVMS. Если вы работали в EDT ил�
     second line
     [End of file]
      Buffer: notes.txt*     | Insert | Forward | Line 2 of 3     <- строка состояния
-    KP7 DO  ^Z EXIT  F1 HELP  GOLD-k SHOW KEYS  Find FIND      <- подсказки по клавишам
+    KP- DO  ^Z EXIT  F1 HELP  GOLD-k SHOW KEYS  Find FIND      <- подсказки по клавишам
     %TPU-S-READ, 2 lines read from file notes.txt              <- строка сообщений
 
 **Строка состояния** показывает:
@@ -117,7 +117,7 @@ GOLD - это **KP/** (косая черта на цифровой клавиа�
 | Стереть букву слева от курсора     | Backspace (Delete на VT)                  |
 | Стереть букву под курсором         | Delete на PC (Remove на VT), KP+          |
 | Стереть слово от курсора до конца  | Ctrl-J                                    |
-| Стереть всю строку                 | KP-, GOLD KP2                             |
+| Стереть всю строку                 | KP9, GOLD KP2                             |
 | Стереть от начала строки до курсора| Ctrl-U                                    |
 | Вернуть последнее стёртое          | GOLD KP- или GOLD KP+ (RESTORE)           |
 | Вставка / замена                   | Ctrl-A (CHANGE MODE)                      |
@@ -177,7 +177,7 @@ WRITE FILE без имени пишет в файл буфера. С имене�
 У всего в редакторе есть имя команды: `FIND`, `GET FILE`, `TWO WINDOWS` и так далее.
 Любую команду можно набрать словами.
 
-1. Нажмите DO: **KP7** (семёрка на цифровой клавиатуре) или **GOLD Enter**.
+1. Нажмите DO: **KP-** (минус на цифровой клавиатуре), **KP7** или **GOLD Enter**.
 2. Внизу появится `Command:`.
 3. Наберите команду и нажмите Enter.
 
@@ -228,8 +228,7 @@ WRITE FILE без имени пишет в файл буфера. С имене�
 3. Двигайте курсор до конца куска. Выделенное показывается инверсным цветом.
 4. Нажмите REMOVE (**Remove**, **KP6**) - кусок вырезан в буфер `INSERT HERE`.
    Или STORE TEXT (**GOLD Remove**, **GOLD KP9**) - кусок скопирован, текст на месте.
-5. Поставьте курсор туда, куда вставить, и нажмите INSERT HERE (**Insert Here**, **KP9**,
-   **GOLD KP6**).
+5. Поставьте курсор туда, куда вставить, и нажмите INSERT HERE (**Insert**, **GOLD KP6**).
 
 Отменить выделение: ещё раз SELECT, или RESET (**GOLD KP.**).
 
@@ -574,10 +573,10 @@ F-клавишах по умолчанию ничего нет: команду �
 Кратко. Полная раскладка на клавиши PC в файле [KEYS.txt](KEYS.txt), живая таблица -
 `HELP KEYS`.
 
-    F1   HELP                  KP/ / Esc  GOLD         KP*  FIND NEXT          KP-  ERASE LINE
+    F1   HELP                  KP/ / Esc  GOLD         KP*  FIND NEXT          KP-  DO
     KP0  MOVE BY LINE          KP1  MOVE BY WORD       KP2  END OF LINE        KP3  MOVE BY CHAR
     KP4  FORWARD               KP5  REVERSE            KP6  REMOVE             KP7  DO
-    KP8  NEXT SCREEN           KP9  INSERT HERE        KP+  ERASE CHARACTER    KP,  ERASE CHARACTER
+    KP8  NEXT SCREEN           KP9  ERASE LINE         KP+  ERASE CHARACTER    KP,  ERASE CHARACTER
     KP.  SELECT                Enter RETURN
     GOLD-KP0 LINE     GOLD-KP1 REPLACE   GOLD-KP2 ERASE LINE   GOLD-KP4 BOTTOM   GOLD-KP5 TOP
     GOLD-KP6 INSERT HERE   GOLD-KP7 SHOW BUFFERS   GOLD-KP8 PREVIOUS SCREEN   GOLD-KP9 STORE TEXT

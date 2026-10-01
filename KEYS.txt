@@ -49,13 +49,13 @@ NUMERIC KEYPAD  --  application mode, NumLock has no effect
 
 +---------------+---------------+---------------+---------------+
 |    NumLock    |       /       |       *       |       -       |
-|       --      |  GOLD prefix  |   FIND NEXT   |   ERASE LINE  |
+|       --      |  GOLD prefix  |   FIND NEXT   |       DO      |
 |               |               |   GOLD: FIND  | GOLD: RESTORE |
 +---------------+---------------+---------------+---------------+
 
 +--------------------+--------------------+--------------------+--------------------+
 |         7          |         8          |         9          |         +          |
-|         DO         |    NEXT SCREEN     |    INSERT HERE     |  ERASE CHARACTER   |
+|         DO         |    NEXT SCREEN     |     ERASE LINE     |  ERASE CHARACTER   |
 | GOLD: SHOW BUFFERS | GOLD: PREV SCREEN  |  GOLD: STORE TEXT  |   GOLD: RESTORE    |
 +--------------------+--------------------+--------------------+--------------------+
 
@@ -153,7 +153,7 @@ NO DEFAULT BINDING  -- F2-F20, Help, Do (VT220 keys); the actions are on:
   ERASE WORD           = Ctrl-J
   CHANGE MODE          = Ctrl-A
   HELP                 = F1, GOLD-H
-  DO                   = keypad 7, GOLD-Enter
+  DO                   = keypad -, keypad 7, GOLD-Enter
   SHOW BUFFERS         = GOLD-S, GOLD-keypad 7
   OTHER WINDOW         = GOLD-O
   EXIT / QUIT          = Ctrl-Z, GOLD-X / GOLD-Q

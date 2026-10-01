@@ -1,6 +1,6 @@
 #define	__MODULE__	"TPU"
-#define	__IDENT__	"X-00-12"
-#define	__REV__		"00.12.00"
+#define	__IDENT__	"X-00-13"
+#define	__REV__		"00.13.00"
 
 /*
 **++
@@ -68,6 +68,9 @@
 **	01-OCT-2026	RRL	X-00-12 (REV 00.12.00) : "делай ближе к EDT: минус ERASE LINE, 3 MOVE BY CHAR" - KP- is
 **				ERASE LINE (GOLD-KP- RESTORE), as EDT's DEL L / UND L; new MOVE BY CHAR (a character in the
 **				current direction, EDT's CHAR) on KP3. DO stays on KP7 and GOLD-Enter.
+**	01-OCT-2026	RRL	X-00-13 (REV 00.13.00) : "insert here пусть будет на insert, а DO на минус": KP- is DO again
+**				(KP7 and GOLD-Enter too, GOLD-KP- RESTORE), ERASE LINE moves to KP9 (GOLD-KP9 STORE TEXT),
+**				INSERT HERE stays on Insert and GOLD-KP6 only.
 **
 **--
 */
@@ -1255,14 +1258,14 @@ int	l_sel = s_sel_bounds(l_b, &l_from, &l_to), l_a, l_z, l_attr;
 
 /* The commands worth a hint, in order of importance, with the key they usually sit on */
 static const struct { const char *cmd; int key; } s_hintcmds[] = {
-	{"DO", KEY_KP7},		{"EXIT", 0x1a},			{"HELP", KEY_PF1},		{"SHOW KEYS", TPU$M_GOLD | 'k'},
+	{"DO", KEY_KPMINUS},		{"EXIT", 0x1a},			{"HELP", KEY_PF1},		{"SHOW KEYS", TPU$M_GOLD | 'k'},
 	{"FIND", KEY_FIND},		{"REPLACE", TPU$M_GOLD | 'r'},	{"SELECT", KEY_SELECT},		{"REMOVE", KEY_REMOVE},
 	{"INSERT HERE", KEY_INSERT},	{"GET FILE", TPU$M_GOLD | 'g'},	{"WRITE FILE", TPU$M_GOLD | 'w'}, {"BUFFER", TPU$M_GOLD | 'b'},
 	{"QUIT", TPU$M_GOLD | 'q'},	{"LEARN", 0x0b},		{"TWO WINDOWS", TPU$M_GOLD | 't'},
 };
 
 /*
- *  DESCRIPTION: Build the key hint row, nano style: "KP7 DO  ^Z EXIT  ...", the key between TPU$K_MARK
+ *  DESCRIPTION: Build the key hint row, nano style: "KP- DO  ^Z EXIT  ...", the key between TPU$K_MARK
  *  bytes so that it is drawn in reverse video. Keys come from the live table: the usual key of a command is
  *  shown while it is still bound to it, otherwise the first key that is; a command with no key is left out.
  *  As many hints as fit the screen width are taken, in the order of s_hintcmds[]
@@ -5920,11 +5923,11 @@ static const TPU$CMD s_cmds[] = {
 
 /* Default bindings: the keypad with the PF row on / * - of a PC (F1 is HELP), EVE control keys, GOLD shortcuts */
 static const struct { int key; const char *cmd; } s_defkeys[] = {
-	{KEY_PF1, "HELP"},		{KEY_KPSLASH, "GOLD"},		{KEY_KPSTAR, "FIND NEXT"},	{KEY_KPMINUS, "ERASE LINE"},
+	{KEY_PF1, "HELP"},		{KEY_KPSLASH, "GOLD"},		{KEY_KPSTAR, "FIND NEXT"},	{KEY_KPMINUS, "DO"},
 	{KEY_KPPLUS, "ERASE CHARACTER"},
 	{KEY_KP0, "MOVE BY LINE"},	{KEY_KP1, "MOVE BY WORD"},	{KEY_KP2, "END OF LINE"},	{KEY_KP3, "MOVE BY CHAR"},
 	{KEY_KP4, "FORWARD"},		{KEY_KP5, "REVERSE"},		{KEY_KP6, "REMOVE"},		{KEY_KP7, "DO"},
-	{KEY_KP8, "NEXT SCREEN"},	{KEY_KP9, "INSERT HERE"},	{KEY_KPCOMMA, "ERASE CHARACTER"},
+	{KEY_KP8, "NEXT SCREEN"},	{KEY_KP9, "ERASE LINE"},	{KEY_KPCOMMA, "ERASE CHARACTER"},
 	{KEY_KPPERIOD, "SELECT"},	{KEY_KPENTER, "RETURN"},
 	{KEY_UP, "MOVE UP"},		{KEY_DOWN, "MOVE DOWN"},	{KEY_LEFT, "MOVE LEFT"},	{KEY_RIGHT, "MOVE RIGHT"},
 	{KEY_FIND, "FIND"},		{KEY_INSERT, "INSERT HERE"},	{KEY_REMOVE, "REMOVE"},		{KEY_SELECT, "SELECT"},

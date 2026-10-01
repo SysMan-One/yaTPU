@@ -2,10 +2,12 @@
 # between them, as a tunnel or a slow line delivers them.  Each result is compared with the same keys sent at once
 # to the editor started directly.
 #
-# usage: LANG=C.UTF-8 python3 tests/esctest.py <path-to-tpu> <scratch-dir> [<yaVTERM-build-dir>]
+# usage: LANG=C.UTF-8 python3 tests/esctest.py <path-to-tpu> <scratch-dir> [<yaVTERM-build-dir> | ssh]
 #
 # With a yaVTERM build directory (vtc, vtd in it) the split runs go through the tunnel: vtc in the pty -> vtd on a
-# free local port -> the editor; key, pin and helper scripts live in the scratch directory.  All paths absolute.
+# free local port -> the editor.  With "ssh" they go through OpenSSH: ssh -tt in the pty -> a private sshd (its
+# own config, host and user keys, on a free local port, run as the current user) -> the editor.  Keys, pins and
+# helper scripts live in the scratch directory, nothing outside it is touched.  All paths absolute.
 import os, pty, select, signal, socket, struct, fcntl, termios, subprocess, sys, time
 TPU = sys.argv[1]; W = sys.argv[2]; VT = sys.argv[3] if len(sys.argv) > 3 else None
 
@@ -22,12 +24,43 @@ def check(name, cond, extra=''):
     print(('PASS ' if cond else 'FAIL ') + name + ('' if cond else '  ' + extra), flush=True)
     return cond
 
-# The tunnel: vtd with a script as its backend; that script and the client wrapper share a run file (cwd, args)
+def free_port():
+    with socket.socket() as l_s:
+        l_s.bind(('127.0.0.1', 0)); return l_s.getsockname()[1]
+
 VTD = None
 PROG = TPU
-if VT:
-    with socket.socket() as l_s:
-        l_s.bind(('127.0.0.1', 0)); port = l_s.getsockname()[1]
+if VT == 'ssh':
+    # A private sshd: host and user keys made here, AuthorizedKeysFile here, no system file read or changed
+    port = free_port(); d = os.path.join(W, 'ssh'); os.makedirs(d, exist_ok=True); os.chmod(d, 0o700)
+    for k in ('host_key', 'user_key'):
+        if not os.path.exists(os.path.join(d, k)):
+            subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-f', os.path.join(d, k)], check=True)
+    with open(os.path.join(d, 'user_key.pub')) as f, open(os.path.join(d, 'authorized_keys'), 'w') as a: a.write(f.read())
+    os.chmod(os.path.join(d, 'authorized_keys'), 0o600)
+    with open(os.path.join(d, 'sshd_config'), 'w') as f:
+        f.write(f'Port {port}\nListenAddress 127.0.0.1\nHostKey {d}/host_key\nAuthorizedKeysFile {d}/authorized_keys\n'
+                f'PidFile {d}/sshd.pid\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\n'
+                'StrictModes no\nPermitRootLogin prohibit-password\nPrintMotd no\nPrintLastLog no\nAcceptEnv LANG\n')
+    VTD = subprocess.Popen(['/usr/sbin/sshd', '-D', '-e', '-f', os.path.join(d, 'sshd_config')],
+            stdout=open(os.path.join(d, 'sshd.log'), 'w'), stderr=subprocess.STDOUT)
+    end = time.time() + 5
+    while time.time() < end:
+        try:
+            socket.create_connection(('127.0.0.1', port), 0.2).close(); break
+        except OSError: time.sleep(0.1)
+    wrapper = os.path.join(W, 'ssh_tpu')
+    with open(wrapper, 'w') as f:
+        f.write('#!/bin/bash\n'
+                f'l_cmd="cd $(printf %q "$PWD") && exec env LANG=$(printf %q "${{LANG:-C.UTF-8}}") {TPU}"\n'
+                'for a in "$@"; do l_cmd+=" $(printf %q "$a")"; done\n'
+                f'exec ssh -tt -q -i {d}/user_key -p {port} -o UserKnownHostsFile={d}/known_hosts '
+                '-o StrictHostKeyChecking=no -o BatchMode=yes 127.0.0.1 "$l_cmd"\n')
+    os.chmod(wrapper, 0o755)
+    PROG = wrapper
+elif VT:
+    # The tunnel: vtd with a script as its backend; that script and the client wrapper share a run file (cwd, args)
+    port = free_port()
     run, home = os.path.join(W, 'vt_next_run'), os.path.join(W, 'vt_home')
     os.makedirs(home, exist_ok=True)
     backend, wrapper = os.path.join(W, 'vt_backend.sh'), os.path.join(W, 'vt_tpu')
@@ -102,6 +135,19 @@ for name, parts in (('one write', [b'\x1bx']), ('pause 400 ms', [b'\x1b', 0.4, b
 got = run(PROG, b'abc', [b'\x1bO', 0.4, b'x'])
 ref = run(TPU, b'abc', [b'\x1b', 0.4, b'O', 0.4, b'x'])
 failures += not check('4 Esc O pause x', got == ref, f'{got!r}, expected {ref!r}')
+
+# 5. The keypad through the link, whole and split: KP- DO, KP9 ERASE LINE, KP3 MOVE BY CHAR, KP/ GOLD, Insert pastes
+E = b'\x1b'
+base = run(TPU, INTRO, [])						# No key: each one below must change the result
+for name, seq, before, after in (('KP- DO top', b'Om', [], [b'top\r']), ('KP9 ERASE LINE', b'Oy', [], []),
+                ('KP3 MOVE BY CHAR', b'Os', [], []),
+                ('KP/ GOLD-X', b'Oo', [], [b'x']),
+                ('Insert pastes', b'[2~', [E + b'On', b'\x1b[C\x1b[C', b'\x1b[3~', b'\x1b[F'], [])):
+    ref = run(TPU, INTRO, before + [E + seq] + after)
+    failures += not check(f'5 {name} has an effect', ref != base, repr(ref))
+    for gap in (0.0, 0.15):
+        got = run(PROG, INTRO, before + [E, gap, seq] + after)
+        failures += not check(f'5 {name} gap {int(gap * 1000)} ms', got == ref, f'{got!r}, expected {ref!r}')
 
 if VTD:
     VTD.send_signal(signal.SIGTERM)

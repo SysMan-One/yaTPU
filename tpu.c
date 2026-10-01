@@ -1,6 +1,6 @@
 #define	__MODULE__	"TPU"
-#define	__IDENT__	"X-00-10"
-#define	__REV__		"00.10.00"
+#define	__IDENT__	"X-00-10ECO1"
+#define	__REV__		"00.10.01"
 
 /*
 **++
@@ -56,6 +56,10 @@
 **	29-SEP-2026	RRL	X-00-10 (REV 00.10.00) : HELP in the VMS way: the introduction with the topics in columns,
 **				one topic at a time, a "Topic? " prompt that scrolls with the navigation keys; SHOW KEYS in
 **				columns as well.
+**	01-OCT-2026	RRL	X-00-10ECO1 (REV 00.10.01) : "увеличь таймаут ESC" - the wait for the next byte of an
+**				escape sequence is 250 ms instead of 80 (TPU$K_ESCWAIT), a key split by a tunnel (yaVTERM)
+**				or a slow line is no longer read as GOLD and stray letters. ESC followed by a byte that
+**				starts no sequence, or by one byte and then a pause, is GOLD and that key, not lost.
 **
 **--
 */
@@ -180,6 +184,9 @@ static int	s_rows = 24, s_cols = 80;
 static int	s_cpr_rows, s_cpr_cols;
 static volatile sig_atomic_t s_winch;
 static int	s_hangup;
+static int	s_term_pushback = -1;				/* A byte read after ESC, given back	*/
+
+#define	TPU$K_ESCWAIT	250					/* ms for the next byte of an escape seq	*/
 
 typedef	struct	srow_t {
 	char *		text;					/* One screen row, NUL-terminated	*/
@@ -635,6 +642,7 @@ static void	s_term_fini (
  *
  *  IMPLICIT INPUTS/OUTPUTS:
  *	s_hangup	set when read() returns end of file
+ *	s_term_pushback	a byte given back by s_term_read_key(), returned first and cleared
  *
  *  RETURNS: the byte, or -1 on timeout, EINTR or end of file
  */
@@ -645,6 +653,13 @@ static int	s_term_getc (
 unsigned char	l_c;
 struct pollfd	l_pfd = {STDIN_FILENO, POLLIN, 0};
 int	l_rc;
+
+	if ( s_term_pushback >= 0 )
+		{
+		l_rc = s_term_pushback;
+		s_term_pushback = -1;
+		return	l_rc;
+		}
 
 	if ( a_timeout_ms >= 0 )
 		{
@@ -667,6 +682,7 @@ int	l_rc;
  *
  *  IMPLICIT INPUTS/OUTPUTS:
  *	s_cpr_rows, s_cpr_cols	filled from a CPR
+ *	s_term_pushback		the byte after a bare ESC that starts no sequence, read again as the next key
  *
  *  RETURNS: the key code, a bare ESC (0x1b) for a lone escape, or KEY_NONE on interrupt, timeout or an
  *  unknown sequence
@@ -688,7 +704,7 @@ int	l_n = 0, l_c, l_len, l_prefix;
 
 	for (;;)
 		{
-		if ( (l_c = s_term_getc(80)) < 0 )
+		if ( (l_c = s_term_getc(TPU$K_ESCWAIT)) < 0 )
 			break;
 
 		l_seq[l_n++] = l_c;
@@ -725,6 +741,13 @@ int	l_n = 0, l_c, l_len, l_prefix;
 
 	if ( l_n == 1 )
 		return	0x1b;
+
+	/* ESC and one byte that is no sequence (or a pause after it): GOLD, then that byte as a key of its own	*/
+	if ( l_n == 2 )
+		{
+		s_term_pushback = (unsigned char) l_seq[1];
+		return	0x1b;
+		}
 
 	return	KEY_NONE;
 }

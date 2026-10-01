@@ -95,11 +95,12 @@ Drives the editor in a pseudo-terminal through 24 scenarios (72 checks): editing
 cut and paste, DO commands, kill -9 and `-recover`, SIGWINCH resize, two windows, REPLACE,
 UTF-8, recall, WILDCARD FIND, case-insensitive Cyrillic search and replace, the EDT keypad.
 
-    LANG=C.UTF-8 python3 TPU/tests/esctest.py $PWD/build-tpu/tpu /tmp/tpu-e [<yaVTERM build dir> | ssh]
+    LANG=C.UTF-8 python3 TPU/tests/esctest.py $PWD/build-tpu/tpu /tmp/tpu-e [<yaVTERM build dir> | ssh | ssh:<host>]
 
 Keys whose escape sequence arrives split in time, ESC first and the rest 30 to 200 ms later, as a tunnel or a slow
 line delivers it: arrows in both forms, Home, End, Delete, KP-, and Esc as GOLD followed by a letter fast or slow;
 then the keypad itself (KP- DO, KP9 ERASE LINE, KP3, KP/ GOLD, Insert pasting), whole and split.
 Each result is compared with the same keys sent at once. Given a yaVTERM build directory (with `vtc` and `vtd`),
 the split runs go through the tunnel, `vtc` -> `vtd` on a free local port -> the editor; given `ssh`, through
-OpenSSH, `ssh -tt` -> a private `sshd` with its own keys on a free local port -> the editor.
+OpenSSH, `ssh -tt` -> a private `sshd` with its own keys on a free local port -> the editor; given `ssh:<host>`,
+through the sshd already running there with your own keys (`ssh:localhost` needs your key in `authorized_keys`).

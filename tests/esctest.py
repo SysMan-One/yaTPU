@@ -2,11 +2,12 @@
 # between them, as a tunnel or a slow line delivers them.  Each result is compared with the same keys sent at once
 # to the editor started directly.
 #
-# usage: LANG=C.UTF-8 python3 tests/esctest.py <path-to-tpu> <scratch-dir> [<yaVTERM-build-dir> | ssh]
+# usage: LANG=C.UTF-8 python3 tests/esctest.py <path-to-tpu> <scratch-dir> [<yaVTERM-build-dir> | ssh | ssh:<host>]
 #
 # With a yaVTERM build directory (vtc, vtd in it) the split runs go through the tunnel: vtc in the pty -> vtd on a
 # free local port -> the editor.  With "ssh" they go through OpenSSH: ssh -tt in the pty -> a private sshd (its
-# own config, host and user keys, on a free local port, run as the current user) -> the editor.  Keys, pins and
+# own config, host and user keys, on a free local port, run as the current user) -> the editor; with "ssh:<host>"
+# through an sshd already running there, the user's own keys and known_hosts (the editor at the same path).  Keys, pins and
 # helper scripts live in the scratch directory, nothing outside it is touched.  All paths absolute.
 import os, pty, select, signal, socket, struct, fcntl, termios, subprocess, sys, time
 TPU = sys.argv[1]; W = sys.argv[2]; VT = sys.argv[3] if len(sys.argv) > 3 else None
@@ -49,16 +50,19 @@ if VT == 'ssh':
         try:
             socket.create_connection(('127.0.0.1', port), 0.2).close(); break
         except OSError: time.sleep(0.1)
+    SSH = f'ssh -tt -q -i {d}/user_key -p {port} -o UserKnownHostsFile={d}/known_hosts -o StrictHostKeyChecking=no -o BatchMode=yes 127.0.0.1'
+elif VT and VT.startswith('ssh:'):
+    SSH = f'ssh -tt -q -o BatchMode=yes {VT[4:]}'
+if VT and VT.startswith('ssh'):
     wrapper = os.path.join(W, 'ssh_tpu')
     with open(wrapper, 'w') as f:
         f.write('#!/bin/bash\n'
                 f'l_cmd="cd $(printf %q "$PWD") && exec env LANG=$(printf %q "${{LANG:-C.UTF-8}}") {TPU}"\n'
                 'for a in "$@"; do l_cmd+=" $(printf %q "$a")"; done\n'
-                f'exec ssh -tt -q -i {d}/user_key -p {port} -o UserKnownHostsFile={d}/known_hosts '
-                '-o StrictHostKeyChecking=no -o BatchMode=yes 127.0.0.1 "$l_cmd"\n')
+                f'exec {SSH} "$l_cmd"\n')
     os.chmod(wrapper, 0o755)
     PROG = wrapper
-elif VT:
+elif VT and not VT.startswith('ssh'):
     # The tunnel: vtd with a script as its backend; that script and the client wrapper share a run file (cwd, args)
     port = free_port()
     run, home = os.path.join(W, 'vt_next_run'), os.path.join(W, 'vt_home')

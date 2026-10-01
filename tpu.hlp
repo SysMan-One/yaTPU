@@ -1,0 +1,269 @@
+1 TPU
+  TPU is a lightweight text editor in the spirit of DEC TPU/EVE.
+  Text lives in buffers; a file is only an optional attribute of a
+  buffer. Commands are typed after the DO key (PF4, F4, KP7 or
+  GOLD-Enter) at the "Command:" prompt, any unambiguous abbreviation
+  will do: "GET F foo.c", "SH B". GOLD is PF1, F1, Esc or KP-: press
+  it, then the next key. EXIT (Ctrl-Z) writes and leaves, QUIT leaves.
+  Every key is journaled into <file>.tjl; -recover replays it.
+
+  At the "Topic?" prompt below type a topic, Return alone leaves.
+  HELP KEYS or SHOW KEYS (GOLD-K) lists the live key bindings, and
+  HELP PC KEYPAD explains a keypad without application mode.
+
+1 BUFFER
+  BUFFER name
+
+  Switch the current window to the named buffer. If there is no such
+  buffer an empty one is created, not tied to any file: a scratch pad.
+  BUFFER without a name goes back to the previous buffer of the window.
+  Also: GOLD-B.
+
+1 GET FILE
+  GET FILE filename
+
+  Read a file into a buffer named after the file and show it. If the
+  file does not exist the buffer is empty and the file is created on
+  EXIT or WRITE FILE. Also: GOLD-G.
+
+1 WRITE FILE
+  WRITE FILE [filename]
+
+  Write the current buffer to its file, or to the named file, which
+  then becomes the buffer's file. Also: GOLD-W.
+
+1 INCLUDE FILE
+  INCLUDE FILE filename
+
+  Insert the content of a file at the cursor. Also: GOLD-I.
+
+1 SHOW BUFFERS
+  List all buffers with their size, file and state. Press Return to
+  come back. Also: F17, GOLD-KP7, GOLD-S.
+
+1 DELETE BUFFER
+  DELETE BUFFER name
+
+  Remove a buffer. A modified buffer asks for confirmation. System
+  buffers cannot be deleted.
+
+1 EXIT
+  Write every modified buffer that has a file, ask about the others,
+  and leave. Keys: Ctrl-Z, F10, GOLD-X.
+
+1 QUIT
+  Leave without writing anything; asks for confirmation if something
+  was modified. Keys: GOLD-F10, GOLD-Q.
+
+1 FIND
+  FIND string
+
+  Search in the current direction (see FORWARD and REVERSE). A pattern
+  typed in lower case matches regardless of case, in any script the
+  locale knows (LANG=C.UTF-8 covers Cyrillic); a pattern with an
+  upper-case letter matches exactly. Keys: Find, GOLD-F.
+
+1 FIND NEXT
+  Search again for the last string. Keys: PF3, F3, or Find with an
+  empty answer.
+
+1 REPLACE
+  REPLACE old
+
+  Prompts for the new string, then stops at each match and asks:
+  Yes, No, All, Last or Quit. Keys: GOLD-KP1, GOLD-Find, GOLD-R.
+
+1 SELECT
+  Mark the start of a selection at the cursor, then move: the selected
+  text is shown in reverse video. Pressing
+  SELECT again cancels it, as does RESET. Keys: Select, KP., and the 5
+  of a PC keypad (Begin).
+
+1 REMOVE
+  Cut the selection into the INSERT HERE buffer. Keys: Remove, KP6.
+
+1 STORE TEXT
+  Copy the selection into the INSERT HERE buffer without deleting it.
+  Keys: GOLD-Remove, GOLD-KP9.
+
+1 INSERT HERE
+  Insert the INSERT HERE buffer at the cursor. Keys: Insert Here, KP9,
+  GOLD-KP6.
+
+1 RESTORE
+  Insert back the text erased by the last ERASE WORD, ERASE LINE or
+  ERASE START OF LINE. Keys: GOLD-KP-, GOLD-KP,.
+
+1 LEARN
+  Start recording every key you press. Finish with Ctrl-R (REMEMBER),
+  which asks for a key to bind the sequence to. Keys are recorded, not
+  commands, so prompts and typed text are replayed exactly. A failing
+  command (for example a FIND that finds nothing) stops the replay,
+  which is how "REPEAT 999 <macro key>" walks through a whole buffer.
+  Key: Ctrl-K.
+
+1 REMEMBER
+  Stop recording a learned sequence and bind it to a key. Key: Ctrl-R.
+
+1 REPEAT
+  REPEAT count
+
+  Repeat the next key that many times. GOLD followed by digits and a
+  key does the same thing, as in EDT.
+
+1 DEFINE KEY
+  DEFINE KEY command
+
+  Bind a command to a key. Also: GOLD-D. Use SHOW KEYS (GOLD-K) to
+  see the current bindings, SAVE KEYS to keep them for the next start.
+
+1 TWO WINDOWS
+  Split the screen; both windows show the current buffer at first.
+  OTHER WINDOW (F20, GOLD-O) moves between them, ONE WINDOW (GOLD-Z)
+  goes back. Keys: GOLD-T.
+
+1 LINE
+  LINE number
+
+  Go to a line. Keys: GOLD-KP0, GOLD-L.
+
+1 MOVE BY LINE
+  Move to the end of the line going forward, or to the start going in
+  reverse; at the end of a line it steps to the next one. Key: KP0.
+
+1 MOVE BY WORD
+  Move one word in the current direction. Key: KP1.
+
+1 NEXT WORD
+  Move one word forward whatever the direction is. Key: GOLD-Right.
+
+1 PREVIOUS WORD
+  Move one word back whatever the direction is. Key: GOLD-Left.
+
+1 PC KEYPAD
+  Most PC terminal emulators never switch the keypad to application
+  mode: with NumLock off the digits send the cursor block codes, with
+  NumLock on they send digits. keycode (built next to tpu) shows what
+  yours sends. The default bindings cover that keypad:
+
+      7 Home  START OF LINE   GOLD: TOP
+      8 Up    MOVE UP         GOLD: TOP
+      9 PgUp  PREVIOUS SCREEN
+      4 Left  MOVE LEFT       GOLD: PREVIOUS WORD
+      5 Begin SELECT          GOLD: RESET
+      6 Right MOVE RIGHT      GOLD: NEXT WORD
+      1 End   END OF LINE     GOLD: BOTTOM
+      2 Down  MOVE DOWN       GOLD: BOTTOM
+      3 PgDn  NEXT SCREEN
+      0 Ins   INSERT HERE     GOLD: STORE TEXT
+      . Del   REMOVE          GOLD: STORE TEXT
+      Enter   RETURN          GOLD: DO
+      /       text            GOLD: HELP
+      *       text            GOLD: SHOW KEYS
+      -       text            GOLD: REVERSE
+      +       text            GOLD: FORWARD
+
+  GOLD is Esc: press it, release, press the next key.
+
+1 FORWARD
+  Set the direction for FIND, MOVE BY LINE and MOVE BY WORD. Key: KP4.
+
+1 REVERSE
+  Set the direction to reverse. Key: KP5.
+
+1 CHANGE MODE
+  Toggle between insert and overstrike. Keys: Ctrl-A, F14.
+
+1 ERASE WORD
+  Erase from the cursor to the end of the word and the spaces after it;
+  RESTORE brings it back. Keys: Ctrl-J (Linefeed), F13.
+
+1 ERASE LINE
+  Erase the whole current line; RESTORE brings it back. Key: GOLD-KP2.
+
+1 ERASE START OF LINE
+  Erase from the start of the line to the cursor. Key: Ctrl-U.
+
+1 REFRESH
+  Re-read the screen size and repaint. The editor follows terminal
+  resizes on its own; REFRESH is for a serial line that cannot signal
+  them. Key: Ctrl-W.
+
+1 HELP
+  HELP [topic]
+
+  Without a topic: the introduction and the list of topics. With one:
+  that topic; any unambiguous abbreviation is accepted. Below the text
+  the "Topic?" prompt takes the next topic; Return alone goes back to
+  the list, Return at the list leaves; Ctrl-Z leaves at once. The
+  navigation keys scroll. HELP KEYS is the live key table, the same
+  as SHOW KEYS. Keys: PF2, F2, GOLD-H, GOLD-?, GOLD-/.
+
+1 HINTS
+  Show or hide the key hint line above the message line: the key in
+  reverse video, the command next to it, as many as fit the width.
+  The keys are the current ones, DEFINE KEY is reflected at once.
+
+1 KEY FILES
+  The key table can live in a text file. At start the editor reads
+  ~/.tpu.keys, then ./tpu.keys, then the file named by -keys or by
+  the TPU_KEYS environment variable, each over the previous one.
+  LOAD KEYS reads a file at any time, SAVE KEYS writes the live table.
+
+  One line per binding, "!" starts a comment:
+
+      PF1, F1, Esc, KP-          = GOLD
+      GOLD-Left                  = PREVIOUS WORD
+      F6                         = KEYS "ab{Return}{GOLD-KP1}"
+      GOLD-k                     = NONE       ! unbinds
+
+  Key names are those of SHOW KEYS (PF4, KP7, Insert Here, Begin,
+  Ctrl-K, Delete, Space, Return, Tab, Escape, a letter, #hex for
+  anything else), several keys through a comma, a blank on both sides
+  of "=". KEYS "..." is a learned sequence: text as itself, special
+  keys in braces, \" \\ \{ escaped. NONE removes the binding.
+  A bad line is reported with its number and skipped, the rest of the
+  file is still loaded.
+
+1 LOAD KEYS
+  LOAD KEYS [file]
+
+  Read a key file over the current bindings. See HELP KEY FILES.
+
+1 SAVE KEYS
+  SAVE KEYS [file]
+
+  Write the current bindings, learned sequences included, as a key
+  file; tpu.keys in the current directory by default. Edit it and
+  LOAD KEYS, or leave it there: it is read at the next start.
+
+1 KEYS
+  Type HELP KEYS or SHOW KEYS to list the current key bindings.
+  Keys: GOLD-K, GOLD-PF2 (GOLD-F2).
+
+1 SHOW KEYS
+  List every key with the command or learned sequence bound to it,
+  as the table is right now. Press Return to come back.
+  Keys: GOLD-K, GOLD-PF2 (GOLD-F2). HELP KEYS shows the same list.
+
+1 WILDCARD FIND
+  WILDCARD FIND pattern
+
+  Find the next line that matches a VMS-style pattern as a whole:
+  * stands for any string, % for any single character, so "*foo*"
+  finds a line containing foo and "%%%:*" a line with a colon in the
+  fourth column. A pattern in lower case ignores case. The cursor goes
+  to the start of the line.
+
+1 RECALL
+  In any prompt the Up and Down arrows (or Ctrl-B) recall previous
+  answers; Delete erases, Ctrl-U clears the line, Ctrl-Z or F10 cancels.
+
+1 MESSAGES
+  Messages look like VMS condition messages:
+
+      %TPU-E-NOTFOUND, could not find: foo
+
+  The letter is the severity (S, I, W, E, F), the name identifies the
+  message in the catalogue (tpumsg.h). Every message is also appended
+  to the MESSAGES buffer: BUFFER MESSAGES shows the whole history.

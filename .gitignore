@@ -1,0 +1,13 @@
+# build trees and local IDE state
+/build/
+/build-*/
+/.qtcreator/
+*.user
+
+# CodeGraph index (local, rebuilt by the codegraph tool)
+/.codegraph/
+__pycache__/
+
+# scratch
+zz.txt
+*.tjl

@@ -1,0 +1,111 @@
+# ESC sequences split in time: drive the editor in a pty, ESC and the rest of a key's sequence sent with a gap
+# between them, as a tunnel or a slow line delivers them.  Each result is compared with the same keys sent at once
+# to the editor started directly.
+#
+# usage: LANG=C.UTF-8 python3 tests/esctest.py <path-to-tpu> <scratch-dir> [<yaVTERM-build-dir>]
+#
+# With a yaVTERM build directory (vtc, vtd in it) the split runs go through the tunnel: vtc in the pty -> vtd on a
+# free local port -> the editor; key, pin and helper scripts live in the scratch directory.  All paths absolute.
+import os, pty, select, signal, socket, struct, fcntl, termios, subprocess, sys, time
+TPU = sys.argv[1]; W = sys.argv[2]; VT = sys.argv[3] if len(sys.argv) > 3 else None
+
+def drain(m, t):
+    end = time.time() + t
+    while True:
+        r, _, _ = select.select([m], [], [], max(0, end - time.time()))
+        if not r: return
+        try:
+            if not os.read(m, 65536): return
+        except OSError: return
+
+def check(name, cond, extra=''):
+    print(('PASS ' if cond else 'FAIL ') + name + ('' if cond else '  ' + extra), flush=True)
+    return cond
+
+# The tunnel: vtd with a script as its backend; that script and the client wrapper share a run file (cwd, args)
+VTD = None
+PROG = TPU
+if VT:
+    with socket.socket() as l_s:
+        l_s.bind(('127.0.0.1', 0)); port = l_s.getsockname()[1]
+    run, home = os.path.join(W, 'vt_next_run'), os.path.join(W, 'vt_home')
+    os.makedirs(home, exist_ok=True)
+    backend, wrapper = os.path.join(W, 'vt_backend.sh'), os.path.join(W, 'vt_tpu')
+    with open(backend, 'w') as f:
+        f.write(f'#!/bin/bash\n. {run}\ncd "$RUN_CWD" && exec {TPU} "${{RUN_ARGS[@]}}"\n')
+    log = os.path.join(W, 'vt_vtd.log')
+    VTD = subprocess.Popen([os.path.join(VT, 'vtd'), '-l', str(port), '-k', os.path.join(W, 'vt_hostkey'), '-e', backend],
+            cwd=W, stdout=open(log, 'w'), stderr=subprocess.STDOUT, env=dict(os.environ, TERM='xterm'))
+    pub = None; end = time.time() + 5
+    while time.time() < end and not pub:
+        time.sleep(0.1)
+        if 'LISTENING' in open(log, errors='replace').read():	# Key file: private key, then public
+            with open(os.path.join(W, 'vt_hostkey'), 'rb') as k: pub = k.read()[32:64].hex()
+    if not pub:
+        print('FAIL vtd did not start'); VTD.kill(); sys.exit(1)
+    with open(wrapper, 'w') as f:
+        f.write('#!/bin/bash\n'
+                f"{{ printf 'RUN_CWD=%q\\n' \"$PWD\"; printf 'RUN_ARGS=('; for a in \"$@\"; do printf '%q ' \"$a\"; done; printf ')\\n'; }} > {run}\n"
+                f'HOME={home} exec {os.path.join(VT, "vtc")} 127.0.0.1:{port} {pub}\n')
+    os.chmod(backend, 0o755); os.chmod(wrapper, 0o755)
+    PROG = wrapper
+
+N = 0
+def run(prog, intro, parts, tail=b'X'):
+    """Start the editor on a new file, type intro, then parts (bytes, or float = a pause), then tail and EXIT;
+    return the file content."""
+    global N; N += 1; name = f'e{N}.txt'
+    m, s = pty.openpty()
+    fcntl.ioctl(s, termios.TIOCSWINSZ, struct.pack('HHHH', 24, 80, 0, 0))
+    p = subprocess.Popen([prog, name], stdin=s, stdout=s, stderr=s, cwd=W, close_fds=True); os.close(s)
+    drain(m, 0.8); os.write(m, intro); drain(m, 0.3)
+    for x in parts:
+        if isinstance(x, float): time.sleep(x)
+        else: os.write(m, x)
+    drain(m, 0.3)
+    if p.poll() is None:
+        os.write(m, tail); drain(m, 0.2)
+    if p.poll() is None:
+        os.write(m, b'\x1a'); drain(m, 0.8)
+    try: p.wait(timeout=5)
+    except subprocess.TimeoutExpired: p.kill(); p.wait()
+    os.close(m)
+    f = os.path.join(W, name)
+    return open(f).read() if os.path.exists(f) else None
+
+GAPS = (0.0, 0.03, 0.15, 0.2)
+INTRO = b'abc\rdef\x1b[A'					# Two lines, the cursor on the first: room to move every way
+failures = 0
+
+# 1. Arrows, CSI and SS3 forms (normal and application cursor mode), ESC apart from the rest
+for key, f in (('Up', 'A'), ('Down', 'B'), ('Right', 'C'), ('Left', 'D')):
+    for form in '[O':
+        seq = (form + f).encode()
+        ref = run(TPU, INTRO, [b'\x1b' + seq])
+        for gap in GAPS:
+            got = run(PROG, INTRO, [b'\x1b', gap, seq])
+            failures += not check(f'1 {key} ESC {form}{f} gap {int(gap * 1000)} ms', got == ref, f'{got!r}, expected {ref!r}')
+
+# 2. Other keys that are ESC sequences on a PC keyboard: Home, End, Delete, F4 (= PF4, DO; the prompt is cancelled)
+for key, seq, extra in (('Home', b'[H', b''), ('End', b'[F', b''), ('Delete', b'[3~', b''), ('F4', b'OS', b'\x15\r')):
+    ref = run(TPU, INTRO, [b'\x1b' + seq, extra])
+    for gap in GAPS:
+        got = run(PROG, INTRO, [b'\x1b', gap, seq, extra])
+        failures += not check(f'2 {key} gap {int(gap * 1000)} ms', got == ref, f'{got!r}, expected {ref!r}')
+
+# 3. Esc is GOLD: Esc and a letter typed fast or slow is GOLD-letter, not lost (GOLD-X = EXIT writes the file)
+for name, parts in (('one write', [b'\x1bx']), ('pause 400 ms', [b'\x1b', 0.4, b'x'])):
+    got = run(PROG, b'abc', parts, tail=b'')
+    failures += not check(f'3 Esc x {name}', got == 'abc\n', repr(got))
+
+# 4. Esc O (or [) and then a pause: GOLD-O and the next key, as typed by hand at any pace
+got = run(PROG, b'abc', [b'\x1bO', 0.4, b'x'])
+ref = run(TPU, b'abc', [b'\x1b', 0.4, b'O', 0.4, b'x'])
+failures += not check('4 Esc O pause x', got == ref, f'{got!r}, expected {ref!r}')
+
+if VTD:
+    VTD.send_signal(signal.SIGTERM)
+    try: VTD.wait(timeout=3)
+    except subprocess.TimeoutExpired: VTD.kill()
+print('failures:', failures)
+sys.exit(1 if failures else 0)

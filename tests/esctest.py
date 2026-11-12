@@ -9,6 +9,8 @@
 # own config, host and user keys, on a free local port, run as the current user) -> the editor; with "ssh:<host>"
 # through an sshd already running there, the user's own keys and known_hosts (the editor at the same path).  Keys, pins and
 # helper scripts live in the scratch directory, nothing outside it is touched.  All paths absolute.
+# Every run waits for the editor's first screen (its status line, up to 20 s) before the first key, and up to 20 s
+# for it to exit: an ssh login on a loaded host takes seconds, and a key sent before the terminal is raw is lost.
 import os, pty, select, signal, socket, struct, fcntl, termios, subprocess, sys, time
 TPU = sys.argv[1]; W = sys.argv[2]; VT = sys.argv[3] if len(sys.argv) > 3 else None
 
@@ -20,6 +22,34 @@ def drain(m, t):
         try:
             if not os.read(m, 65536): return
         except OSError: return
+
+def started(m, p, t=20.0):
+    """Wait until the editor has drawn its first screen: its status line (" Buffer: ", tpu.c s_win_render) is in
+    the pty output.  The terminal is raw by then (s_term_init() comes first), so no key is eaten by the line
+    discipline - an ssh login on a loaded host can take seconds.  Gives up after t s or when the editor exits;
+    RETURNS True when the screen was seen."""
+    out = b''; end = time.time() + t
+    while b' Buffer: ' not in out:
+        left = end - time.time()
+        if left <= 0 or p.poll() is not None:
+            print(f'NOTE no first screen in {t:.0f} s (exit {p.poll()}): {out[-200:]!r}', flush=True)
+            return False
+        r, _, _ = select.select([m], [], [], min(left, 0.2))
+        if r:
+            try: d = os.read(m, 65536)
+            except OSError: d = b''
+            if not d: continue
+            out += d
+    return True
+
+def finished(m, p, t=20.0):
+    """Wait up to t s for the editor to exit, reading the pty meanwhile so that neither it nor ssh blocks on a full
+    one; kill it if it does not."""
+    end = time.time() + t
+    while p.poll() is None and time.time() < end:
+        drain(m, 0.1)
+    if p.poll() is None: p.kill()
+    p.wait()
 
 def check(name, cond, extra=''):
     print(('PASS ' if cond else 'FAIL ') + name + ('' if cond else '  ' + extra), flush=True)
@@ -95,7 +125,9 @@ def run(prog, intro, parts, tail=b'X'):
     m, s = pty.openpty()
     fcntl.ioctl(s, termios.TIOCSWINSZ, struct.pack('HHHH', 24, 80, 0, 0))
     p = subprocess.Popen([prog, name], stdin=s, stdout=s, stderr=s, cwd=W, close_fds=True); os.close(s)
-    drain(m, 0.8); os.write(m, intro); drain(m, 0.3)
+    if not started(m, p):
+        p.kill(); p.wait(); os.close(m); return f'<run {N}: no first screen>'	# Unique: equal to no other result
+    os.write(m, intro); drain(m, 0.3)
     for x in parts:
         if isinstance(x, float): time.sleep(x)
         else: os.write(m, x)
@@ -103,9 +135,8 @@ def run(prog, intro, parts, tail=b'X'):
     if p.poll() is None:
         os.write(m, tail); drain(m, 0.2)
     if p.poll() is None:
-        os.write(m, b'\x1a'); drain(m, 0.8)
-    try: p.wait(timeout=5)
-    except subprocess.TimeoutExpired: p.kill(); p.wait()
+        os.write(m, b'\x1a')
+    finished(m, p)
     os.close(m)
     f = os.path.join(W, name)
     return open(f).read() if os.path.exists(f) else None

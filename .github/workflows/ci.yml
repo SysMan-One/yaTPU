@@ -30,9 +30,9 @@
 #                                       user
 #               Not run: esctest.py ssh:<host> (an sshd already running there
 #               and the user's own keys) and esctest.py <yaVTERM build dir>
-#               (needs a yaVTERM build).  The ssh run is advisory
-#               (continue-on-error): its fixed start-up wait is timing
-#               sensitive on a loaded host.  The scripts print PASS/FAIL lines;
+#               (needs a yaVTERM build).  The ssh run counts like the others:
+#               esctest.py waits for the first screen of the editor (up to
+#               20 s) before it types.  The scripts print PASS/FAIL lines;
 #               ptytest.py always exits 0, so a step fails on any FAIL line or
 #               when no PASS line is seen.
 #
@@ -43,6 +43,12 @@
 #               12-NOV-2026     CLD     X-00-14 : Initial revision, after
 #                                       yaNetCheck's ci.yml; STARLET_REF
 #                                       7e910f8 = StarLet 1.7.2.
+#
+#               12-NOV-2026     CLD     X-00-14 : The ssh run of esctest.py is
+#                                       no longer continue-on-error (the script
+#                                       waits for the first screen now, not a
+#                                       fixed 0.8 s); STARLET_REF fde1672 =
+#                                       StarLet 1.7.3, the same as release.yml.
 #
 #--
 
@@ -59,7 +65,7 @@ permissions:
 
 # The pinned commit of StarLet - moved by hand, after a check
 env:
-  STARLET_REF: 7e910f809db2932c0a39904280322eb1eedef9d8     # StarLet 1.7.2
+  STARLET_REF: fde1672f770155df542b8b909fa3b9470f642044     # StarLet 1.7.3 (tag v1.7.3)
 
 defaults:
   run:
@@ -126,10 +132,9 @@ jobs:
           if grep -q '^FAIL' esctest.log; then exit 1; fi           # "! grep" would not trip bash -e
           grep -q '^PASS' esctest.log
 
-      # Advisory: the script gives the editor a fixed 0.8 s to start, an ssh login on a busy host can take
-      # longer and the first keys are lost (seen locally at load 14: 11 FAIL; idle: 78 PASS, 0 FAIL)
+      # The script waits for the editor's status line before the first key (up to 20 s): an ssh login on a busy
+      # host takes seconds, and a fixed 0.8 s lost the first keys (seen locally at load 14: 11 FAIL)
       - name: Test - esctest.py through a private sshd
-        continue-on-error: true
         run: |
           mkdir -p "${RUNNER_TEMP}/tpu-s"
           python3 tests/esctest.py "${PWD}/build/tpu" "${RUNNER_TEMP}/tpu-s" ssh | tee esctest-ssh.log

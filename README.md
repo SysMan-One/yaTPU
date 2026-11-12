@@ -1,6 +1,7 @@
 # yaTPU
 
 [![CI](https://github.com/SysMan-One/yaTPU/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SysMan-One/yaTPU/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/SysMan-One/yaTPU?sort=date)](https://github.com/SysMan-One/yaTPU/releases/latest)
 
 A lightweight text editor in the spirit of DEC TPU/EVE. Plain C, termios and VT100
 escape sequences, no ncurses. Depends only on the installed StarLet package (`utility_routines`, 1.6.3 or later, found via `find_package(StarLet)`).
@@ -105,6 +106,41 @@ Each result is compared with the same keys sent at once. Given a yaVTERM build d
 the split runs go through the tunnel, `vtc` -> `vtd` on a free local port -> the editor; given `ssh`, through
 OpenSSH, `ssh -tt` -> a private `sshd` with its own keys on a free local port -> the editor; given `ssh:<host>`,
 through the sshd already running there with your own keys (`ssh:localhost` needs your key in `authorized_keys`).
+Each run waits for the editor's first screen (its status line, up to 20 s) before it types, so a slow ssh login
+on a loaded host does not lose the first keys.
+
+## Releases
+
+A tag that is `__IDENT__` of `tpu.c`, exactly and with no `v` (`X-00-14`, or in the new form `X.00-15ECO01`),
+makes a GitHub Release by `.github/workflows/release.yml`: the editor is built on Debian 12 for amd64 and arm64,
+its pty tests are run, the package `yatpu_<aa.bb.cc>_<arch>.deb` (prefix `/usr`, the version derived from the
+identification, `X-00-14` giving `0.14.0`) is installed on Debian 12, Debian 13 and Ubuntu 24.04, tested there and
+purged, and the packages, the sources tarball `yatpu-<ident>.tar.gz` and `SHA256SUMS` are attached.
+
+    sudo apt install ./yatpu_0.14.0_amd64.deb          # /usr/bin/tpu, /usr/bin/keycode, /usr/share/doc/tpu
+
+The same package is made by hand with `cpack -G DEB` in a build tree:
+
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build && (cd build && cpack -G DEB)
+
+Every push to `main` and every pull request is built and tested (x86_64 and aarch64) by `.github/workflows/ci.yml`,
+the badge at the top.
+
+## Checking a download
+
+A release carries `SHA256SUMS.minisig`, a [minisign](https://jedisct1.github.io/minisign/) signature of
+`SHA256SUMS`: one signature for every package and the sources tarball.  The public key is in `minisign.pub` here
+(the same key signs the kits of AlphaEmu, HELP, StarLet and SKSHOW):
+
+    RWQl4NAqFsHKkNoHkS52WSZSk+2kb+e58DWYpoi/jVFa6TqOTAm3Ph14
+
+Put the files you took next to `SHA256SUMS` and `SHA256SUMS.minisig`, then:
+
+    minisign -Vm SHA256SUMS -P RWQl4NAqFsHKkNoHkS52WSZSk+2kb+e58DWYpoi/jVFa6TqOTAm3Ph14
+    sha256sum -c --ignore-missing SHA256SUMS
+
+The first must say `Signature and comment signature verified`, the second `OK` for every file.  Anything else -
+the file is not the one released: do not install it.
 
 ## License
 

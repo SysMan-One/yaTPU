@@ -1,0 +1,271 @@
+#++
+#   FACILITY:	yaTPU - a lightweight text editor in the spirit of DEC TPU/EVE: the signed release kits (amd64, arm64)
+#
+#   AUTHOR:	StarLet Squad and Ruslan R. Laishev (AKA: BadAss SysMan)
+#
+#   CREATION DATE: 12-NOV-2026
+#
+#	A push of the tag that is __IDENT__ of tpu.c builds the editor, runs its pty tests
+#	(ptytest.py, esctest.py direct) on both architectures, installs the .deb on Debian 12,
+#	Debian 13 and Ubuntu 24.04 and runs the tests there against /usr/bin/tpu, and attaches
+#	the packages, the sources tarball, SHA256SUMS and its minisign signature to the Release
+#	of that tag.  The manual run (Actions -> release -> Run workflow) with the <tag> input
+#	does the same for an existing tag (the files of its Release are replaced); without it -
+#	only builds and tests the branch, see the run's artifacts.
+#
+#	The tag is __IDENT__ as tpu.c has it, with no "v", in either form:
+#	    X.aa-bb[ECOcc]	the form from 12-NOV-2026, two digits in every field (X.00-15ECO01)
+#	    X-aa-bb[ECOc]	the older form, kept by a module not touched since (X-00-14)
+#	The ident is never given on the command line here, so a tag cannot name a kit the tree
+#	is not.
+#
+#	Built on Debian 12 (bookworm): the package needs glibc of bookworm or newer.  StarLet is
+#	the pinned commit of ci.yml (STARLET_REF), a static archive, so the package depends on
+#	the C library only.  The package is made for the prefix /usr (CMakeLists.txt).
+#
+#	The ssh run of esctest.py is left to ci.yml: in a container as root it would need a
+#	system sshd set up, and the code under test is the same.
+#
+#	MODIFICATION HISTORY:
+#
+#	12-NOV-2026	CLD	X-00-14 : Initial version, after skshow's release.yml;
+#				STARLET_REF fde1672 = StarLet 1.7.3.
+#--
+
+name: release
+
+on:
+  push:
+    tags: ['X.*', 'X-*', 'V.*', 'V-*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "An existing tag (X-00-14, X.00-15ECO01), equal to __IDENT__ of tpu.c of its tree, to build and release; empty - build only"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  #	The pinned commit of StarLet - the same as ci.yml, moved by hand, after a check
+  STARLET_REF: "fde1672f770155df542b8b909fa3b9470f642044"     # StarLet 1.7.3 (tag v1.7.3)
+  DEPS_PREFIX: "/opt/yatpu-deps"
+
+defaults:
+  run:
+    shell: bash                 # bash -e -o pipefail: a crash of a test script under tee fails the step
+
+jobs:
+  deb:
+    name: build ${{ matrix.arch }}
+    strategy:
+      matrix:
+        include:
+          - { arch: amd64, runner: ubuntu-24.04 }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: debian:bookworm
+    env:
+      DEB_ARCH: ${{ matrix.arch }}
+      LANG: C.UTF-8
+    steps:
+      - name: Install prerequisites
+        run: |
+          apt-get update
+          apt-get install --yes --no-install-recommends build-essential cmake dpkg-dev file git curl ca-certificates python3
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: StarLet from GitHub
+        run: |
+          mkdir -p /tmp/deps/utility_routines
+          curl -sSfL --retry 3 -o /tmp/deps/utility_routines.tar.gz \
+            "https://github.com/SysMan-One/utility_routines/archive/${STARLET_REF}.tar.gz"
+          tar -xzf /tmp/deps/utility_routines.tar.gz -C /tmp/deps/utility_routines --strip-components=1
+          cmake -S /tmp/deps/utility_routines -B /tmp/deps/utility_routines-build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${DEPS_PREFIX}" \
+            -DCMAKE_INSTALL_LIBDIR=lib \
+            -DBUILD_TESTING=OFF
+          cmake --build /tmp/deps/utility_routines-build -j "$(nproc)"
+          cmake --install /tmp/deps/utility_routines-build
+
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+            -DCMAKE_PREFIX_PATH="${DEPS_PREFIX}"
+          cmake --build build -j "$(nproc)"
+
+      # Scratch directories and the tpu path must be absolute (the scripts cd there); ptytest.py always exits 0,
+      # so a step fails on any FAIL line or when no PASS line is seen
+      - name: Test - ptytest.py, esctest.py direct
+        run: |
+          mkdir -p /tmp/tpu-w /tmp/tpu-e
+          python3 tests/ptytest.py "${PWD}/build/tpu" /tmp/tpu-w | tee ptytest.log
+          python3 tests/esctest.py "${PWD}/build/tpu" /tmp/tpu-e | tee esctest.log
+          for l in ptytest.log esctest.log
+          do
+            if grep '^FAIL' "$l"; then echo "::error::FAIL lines in $l"; exit 1; fi    # "! grep" would not trip bash -e
+            grep -q '^PASS' "$l"
+          done
+
+      - name: Package
+        run: |
+          (cd build && cpack -G DEB)
+          deb=$(ls build/*.deb)
+          dpkg-deb --info "$deb"
+          dpkg-deb --contents "$deb"
+          case "$deb" in build/yatpu_*_"${DEB_ARCH}".deb) ;; *) echo "::error::wrong name: $deb"; exit 1;; esac
+          dpkg-deb --contents "$deb" | grep -q '/usr/bin/tpu$'
+          dpkg-deb --contents "$deb" | grep -q '/usr/bin/keycode$'
+          dpkg-deb --contents "$deb" | grep -q '/usr/share/doc/tpu/README\.md$'
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: deb-${{ matrix.arch }}
+          path: build/*.deb
+          if-no-files-found: error
+
+  test:
+    name: install ${{ matrix.arch }} on ${{ matrix.distro }}
+    needs: deb
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+        distro: ['debian:bookworm', 'debian:trixie', 'ubuntu:noble']
+        include:
+          - { arch: amd64, runner: ubuntu-24.04 }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.distro }}
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      LANG: C.UTF-8             # Not LC_ALL=C: the UTF-8 scenarios of ptytest.py need it
+    steps:
+      # Only the test scripts are wanted from the tree; the programs are the installed ones
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          path: src
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: deb-${{ matrix.arch }}
+
+      - name: Install the package
+        run: |
+          apt-get update
+          apt-get install --yes python3 ./*.deb
+          test -x /usr/bin/tpu
+          test -x /usr/bin/keycode
+
+      # ptytest.py finds keycode next to tpu: /usr/bin/keycode
+      - name: Run it
+        run: |
+          keycode -version | tee keycode.out
+          grep -q '^KEYCODE ' keycode.out
+          # No terminal: tpu refuses with a message and the exit code 1, not a crash or a hang
+          rc=0; timeout 10 tpu zz.txt < /dev/null > notty.out 2>&1 || rc=$?
+          cat notty.out
+          test "$rc" = 1 || { echo "::error::tpu < /dev/null: exit code $rc, 1 expected"; exit 1; }
+          grep -q 'not a terminal' notty.out
+          mkdir -p /tmp/tpu-w /tmp/tpu-e
+          python3 src/tests/ptytest.py /usr/bin/tpu /tmp/tpu-w | tee ptytest.log
+          python3 src/tests/esctest.py /usr/bin/tpu /tmp/tpu-e | tee esctest.log
+          for l in ptytest.log esctest.log
+          do
+            if grep '^FAIL' "$l"; then echo "::error::FAIL lines in $l"; exit 1; fi    # "! grep" would not trip bash -e
+            grep -q '^PASS' "$l"
+          done
+
+      - name: Remove it
+        run: |
+          dpkg --purge yatpu
+          # (a '!' in front would not stop the step: errexit ignores it)
+          if dpkg -s yatpu > /dev/null 2>&1; then echo "::error::yatpu still known to dpkg after the purge"; exit 1; fi
+          for f in /usr/bin/tpu /usr/bin/keycode /usr/share/doc/tpu
+          do
+            if [ -e "$f" ]; then echo "::error::$f left after the purge"; exit 1; fi
+          done
+
+  release:
+    name: GitHub Release
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/') || inputs.tag != ''
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          path: src
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: 'deb-*'
+          merge-multiple: true
+
+      - name: Make the files of the Release
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          # The tag: X.aa-bb[ECOcc] strictly, or the older X-aa-bb[ECOc]; never a "v"
+          if ! printf '%s\n' "$TAG" | grep -Eqx '[A-Za-z]\.[0-9]{2}-[0-9]{2}(ECO[0-9]{2})?|[A-Za-z]-[0-9]+-[0-9]+(ECO[0-9]+)?'
+          then
+            echo "::error::the tag $TAG is of neither form X.aa-bb[ECOcc] nor X-aa-bb[ECOc]"; exit 1
+          fi
+          ident=$(sed -n 's/^#define[[:space:]][[:space:]]*__IDENT__[[:space:]][[:space:]]*"\([^"]*\)".*/\1/p' src/tpu.c)
+          test -n "$ident" || { echo "::error::no __IDENT__ in tpu.c"; exit 1; }
+          test "$TAG" = "$ident" || { echo "::error::the tag $TAG is not __IDENT__ $ident of tpu.c"; exit 1; }
+          ls *.deb
+          test "$(ls yatpu_*.deb | wc -l)" = 2 || { echo "::error::not the two packages"; ls *.deb; exit 1; }
+          # The sources: the tree of the tag as git has it, nothing built in it
+          git -C src archive --format=tar.gz --prefix="yatpu-$ident/" -o "$PWD/yatpu-$ident.tar.gz" HEAD
+          tar tzf "yatpu-$ident.tar.gz" | grep -qx "yatpu-$ident/tpu.c"
+          ls -l *.deb *.tar.gz
+          sha256sum *.deb *.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+          echo "ident=$ident" >> "$GITHUB_ENV"
+
+      #	The secret MINISIGN_KEY is the secret key of minisign.pub, whole text
+      #	(no password); it lives in the runner's temporary directory for this
+      #	step only.  The signature is checked with the public key pinned below
+      #	(the one of minisign.pub) before anything is published.
+      - name: Sign SHA256SUMS
+        env:
+          MINISIGN_KEY: ${{ secrets.MINISIGN_KEY }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if [ -z "${MINISIGN_KEY}" ]
+          then
+            echo "::error::no MINISIGN_KEY secret - the release would go out unsigned"
+            exit 1
+          fi
+          sudo apt-get update -q && sudo apt-get install -y -q minisign
+          key="${RUNNER_TEMP}/minisign.key"
+          trap 'rm -f "${key}"' EXIT
+          ( umask 077; printf '%s\n' "${MINISIGN_KEY}" > "${key}" )
+          minisign -S -s "${key}" -m SHA256SUMS \
+            -t "yaTPU ${TAG} SHA256SUMS signed $(date -u +%d-%b-%Y | tr a-z A-Z)"
+          # The key is pinned here, not read from src/: a re-run of an older tag may have no minisign.pub.
+          minisign -Vm SHA256SUMS -P RWQl4NAqFsHKkNoHkS52WSZSk+2kb+e58DWYpoi/jVFa6TqOTAm3Ph14
+
+      - name: Attach the files to the Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" *.deb *.tar.gz SHA256SUMS SHA256SUMS.minisig --clobber
+          else
+            gh release create "$TAG" *.deb *.tar.gz SHA256SUMS SHA256SUMS.minisig --title "yaTPU $ident" --notes-file - <<EOF
+          yaTPU $ident - a lightweight text editor in the spirit of DEC TPU/EVE with the EDT keypad, and keycode, which shows what a key sends. The .deb for amd64 and arm64 is installed on Debian 12, Debian 13 and Ubuntu 24.04: \`sudo apt install ./yatpu_<version>_<arch>.deb\`; the programs are /usr/bin/tpu and /usr/bin/keycode. The sources: \`yatpu-$ident.tar.gz\`.
+
+          To check a download: \`minisign -Vm SHA256SUMS -P RWQl4NAqFsHKkNoHkS52WSZSk+2kb+e58DWYpoi/jVFa6TqOTAm3Ph14\` (\`SHA256SUMS.minisig\` next to it), then \`sha256sum -c --ignore-missing SHA256SUMS\`.
+          EOF
+          fi

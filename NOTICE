@@ -1,0 +1,7 @@
+yaTPU (tpu, keycode) - a lightweight text editor in the spirit of DEC TPU/EVE
+Copyright StarLet Squad and Ruslan R. Laishev, 2026
+
+Licensed under the Apache License, Version 2.0 - see LICENSE.
+
+This product is linked against the StarLet utility routines, by the same
+author and under the Apache License 2.0.

@@ -1,0 +1,141 @@
+#++
+#       FACILITY: TPU - a lightweight text editor in the spirit of DEC TPU/EVE
+#
+#       AUTHOR: StarLet Squad and Ruslan R. Laishev (AKA: BadAss SysMan)
+#
+#       CREATION DATE: 12-NOV-2026
+#
+#       DESCRIPTION:
+#               Builds tpu and keycode and runs the pty tests of tests/ on
+#               x86_64 and aarch64.
+#
+#               tpu wants StarLet as an INSTALLED CMake package - see
+#               CMakeLists.txt; HELP is not used (tpu.hlp is embedded by
+#               hlp2h.cmake), no ncurses.  StarLet is taken here as an archive
+#               of a pinned commit (STARLET_REF) of SysMan-One/utility_routines
+#               - a new commit there cannot break this build unseen; move the
+#               pin by hand.  It is built and installed into a prefix of the
+#               runner, and the build of tpu is pointed at it with
+#               CMAKE_PREFIX_PATH.
+#
+#               No test is registered with ctest; the two Python scripts drive
+#               the editor in a pseudo-terminal of their own, no real terminal:
+#                 ptytest.py            the scenarios (editing, LEARN, recover,
+#                                       SIGWINCH, UTF-8, ...)
+#                 esctest.py            ESC sequences split in time, the editor
+#                                       started directly
+#                 esctest.py ssh        the same through ssh -tt and a private
+#                                       sshd on 127.0.0.1 with keys made in the
+#                                       scratch directory, run as the runner
+#                                       user
+#               Not run: esctest.py ssh:<host> (an sshd already running there
+#               and the user's own keys) and esctest.py <yaVTERM build dir>
+#               (needs a yaVTERM build).  The ssh run is advisory
+#               (continue-on-error): its fixed start-up wait is timing
+#               sensitive on a loaded host.  The scripts print PASS/FAIL lines;
+#               ptytest.py always exits 0, so a step fails on any FAIL line or
+#               when no PASS line is seen.
+#
+#                   push to main, pull_request, workflow_dispatch   build + tests
+#
+#       MODIFICATION HISTORY:
+#
+#               12-NOV-2026     CLD     X-00-14 : Initial revision, after
+#                                       yaNetCheck's ci.yml; STARLET_REF
+#                                       7e910f8 = StarLet 1.7.2.
+#
+#--
+
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# The pinned commit of StarLet - moved by hand, after a check
+env:
+  STARLET_REF: 7e910f809db2932c0a39904280322eb1eedef9d8     # StarLet 1.7.2
+
+defaults:
+  run:
+    shell: bash                 # bash -e -o pipefail: a crash of a test script under tee fails the step
+
+jobs:
+  test:
+    name: ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64,  runner: ubuntu-24.04 }
+          - { arch: aarch64, runner: ubuntu-24.04-arm }
+
+    env:
+      DEPS_PREFIX: ${{ github.workspace }}/_deps/prefix
+      LANG: C.UTF-8
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # openssh-server/-client: /usr/sbin/sshd and ssh for "esctest.py ssh"
+      - name: Tools of the build host
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q cmake gcc make python3 openssh-server openssh-client
+
+      - name: StarLet from GitHub
+        run: |
+          mkdir -p _deps/utility_routines
+          curl -sSfL --retry 3 -o _deps/utility_routines.tar.gz \
+            "https://github.com/SysMan-One/utility_routines/archive/${STARLET_REF}.tar.gz"
+          tar -xzf _deps/utility_routines.tar.gz -C _deps/utility_routines --strip-components=1
+          cmake -S _deps/utility_routines -B _deps/utility_routines-build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${DEPS_PREFIX}" \
+            -DCMAKE_INSTALL_LIBDIR=lib \
+            -DBUILD_TESTING=OFF
+          cmake --build _deps/utility_routines-build --parallel
+          cmake --install _deps/utility_routines-build
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${DEPS_PREFIX}"
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      # Scratch directories and the tpu path must be absolute (the scripts cd there)
+      - name: Test - ptytest.py
+        run: |
+          mkdir -p "${RUNNER_TEMP}/tpu-w"
+          python3 tests/ptytest.py "${PWD}/build/tpu" "${RUNNER_TEMP}/tpu-w" | tee ptytest.log
+          if grep -q '^FAIL' ptytest.log; then exit 1; fi           # "! grep" would not trip bash -e
+          grep -q '^PASS' ptytest.log
+
+      - name: Test - esctest.py, direct
+        run: |
+          mkdir -p "${RUNNER_TEMP}/tpu-e"
+          python3 tests/esctest.py "${PWD}/build/tpu" "${RUNNER_TEMP}/tpu-e" | tee esctest.log
+          if grep -q '^FAIL' esctest.log; then exit 1; fi           # "! grep" would not trip bash -e
+          grep -q '^PASS' esctest.log
+
+      # Advisory: the script gives the editor a fixed 0.8 s to start, an ssh login on a busy host can take
+      # longer and the first keys are lost (seen locally at load 14: 11 FAIL; idle: 78 PASS, 0 FAIL)
+      - name: Test - esctest.py through a private sshd
+        continue-on-error: true
+        run: |
+          mkdir -p "${RUNNER_TEMP}/tpu-s"
+          python3 tests/esctest.py "${PWD}/build/tpu" "${RUNNER_TEMP}/tpu-s" ssh | tee esctest-ssh.log
+          if grep -q '^FAIL' esctest-ssh.log; then exit 1; fi           # "! grep" would not trip bash -e
+          grep -q '^PASS' esctest-ssh.log
+
+      - name: sshd log
+        if: failure()
+        run: cat "${RUNNER_TEMP}/tpu-s/ssh/sshd.log" || true

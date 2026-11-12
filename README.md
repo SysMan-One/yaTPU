@@ -1,5 +1,7 @@
 # TPU
 
+[![CI](https://github.com/SysMan-One/yaTPU/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SysMan-One/yaTPU/actions/workflows/ci.yml)
+
 A lightweight text editor in the spirit of DEC TPU/EVE. Plain C, termios and VT100
 escape sequences, no ncurses. Depends only on the installed StarLet package (`utility_routines`, 1.6.3 or later, found via `find_package(StarLet)`).
 The key table `tpukeys.h` is shared with `keycode`, a utility that prints the bytes a key sends and the TPU name of the key.
@@ -104,3 +106,7 @@ Each result is compared with the same keys sent at once. Given a yaVTERM build d
 the split runs go through the tunnel, `vtc` -> `vtd` on a free local port -> the editor; given `ssh`, through
 OpenSSH, `ssh -tt` -> a private `sshd` with its own keys on a free local port -> the editor; given `ssh:<host>`,
 through the sshd already running there with your own keys (`ssh:localhost` needs your key in `authorized_keys`).
+
+## License
+
+Apache License 2.0 - see [LICENSE](LICENSE) and [NOTICE](NOTICE).

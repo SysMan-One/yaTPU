@@ -44,7 +44,7 @@
 #                                       yaNetCheck's ci.yml; STARLET_REF
 #                                       7e910f8 = StarLet 1.7.2.
 #
-#               12-NOV-2026     CLD     X-00-14 : The ssh run of esctest.py is
+#               12-NOV-2026     RRL     X-00-14 : The ssh run of esctest.py is
 #                                       no longer continue-on-error (the script
 #                                       waits for the first screen now, not a
 #                                       fixed 0.8 s); STARLET_REF fde1672 =

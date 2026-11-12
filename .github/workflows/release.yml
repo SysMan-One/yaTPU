@@ -30,6 +30,10 @@
 #
 #	12-NOV-2026	RRL	X-00-14 : Initial version, after skshow's release.yml;
 #				STARLET_REF fde1672 = StarLet 1.7.3.
+#
+#	12-NOV-2026	RRL	X-00-14 : The checks of the package and the tarball read the whole listing
+#				(grep > /dev/null, not grep -q): under pipefail grep -q ending early killed
+#				dpkg-deb and tar by SIGPIPE and failed the step.
 #--
 
 name: release
@@ -120,9 +124,9 @@ jobs:
           dpkg-deb --info "$deb"
           dpkg-deb --contents "$deb"
           case "$deb" in build/yatpu_*_"${DEB_ARCH}".deb) ;; *) echo "::error::wrong name: $deb"; exit 1;; esac
-          dpkg-deb --contents "$deb" | grep -q '/usr/bin/tpu$'
-          dpkg-deb --contents "$deb" | grep -q '/usr/bin/keycode$'
-          dpkg-deb --contents "$deb" | grep -q '/usr/share/doc/tpu/README\.md$'
+          dpkg-deb --contents "$deb" | grep '/usr/bin/tpu$' > /dev/null
+          dpkg-deb --contents "$deb" | grep '/usr/bin/keycode$' > /dev/null
+          dpkg-deb --contents "$deb" | grep '/usr/share/doc/tpu/README\.md$' > /dev/null
 
       - uses: actions/upload-artifact@v6
         with:
@@ -225,7 +229,7 @@ jobs:
           test "$(ls yatpu_*.deb | wc -l)" = 2 || { echo "::error::not the two packages"; ls *.deb; exit 1; }
           # The sources: the tree of the tag as git has it, nothing built in it
           git -C src archive --format=tar.gz --prefix="yatpu-$ident/" -o "$PWD/yatpu-$ident.tar.gz" HEAD
-          tar tzf "yatpu-$ident.tar.gz" | grep -qx "yatpu-$ident/tpu.c"
+          tar tzf "yatpu-$ident.tar.gz" | grep -x "yatpu-$ident/tpu.c" > /dev/null
           ls -l *.deb *.tar.gz
           sha256sum *.deb *.tar.gz > SHA256SUMS
           cat SHA256SUMS

@@ -1,6 +1,6 @@
 # TPU. Руководство пользователя
 
-Версия X-00-10. English version: [GUIDE-EN.md](GUIDE-EN.md).
+Версия X-00-14. English version: [GUIDE-EN.md](GUIDE-EN.md).
 
 TPU - это маленький текстовый редактор для терминала. Он сделан по образцу редактора
 TPU/EVE из системы OpenVMS. Если вы работали в EDT или EVE, вам будет всё знакомо.

@@ -1,6 +1,6 @@
 # TPU. User Guide
 
-Version X-00-10. Русская версия: [GUIDE-RU.md](GUIDE-RU.md).
+Version X-00-14. Русская версия: [GUIDE-RU.md](GUIDE-RU.md).
 
 TPU is a small text editor for the terminal. It is made after the TPU/EVE editor of
 the OpenVMS system. If you have used EDT or EVE, you will feel at home. If not, this guide

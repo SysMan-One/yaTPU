@@ -1,4 +1,4 @@
-# TPU
+# yaTPU
 
 [![CI](https://github.com/SysMan-One/yaTPU/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SysMan-One/yaTPU/actions/workflows/ci.yml)
 
@@ -8,8 +8,7 @@ The key table `tpukeys.h` is shared with `keycode`, a utility that prints the by
 
 ## Build
 
-    cmake -S TPU -B build-tpu && cmake --build build-tpu      # standalone
-    cmake -S . -B build && cmake --build build --target tpu   # from the WorkBench tree
+    cmake -S . -B build-tpu && cmake --build build-tpu      # StarLet found by find_package (CMAKE_PREFIX_PATH if not in /usr/local)
 
     cmake --install build-tpu --prefix /usr/local                  # tpu, keycode -> bin; docs -> share/doc/tpu
 
@@ -89,7 +88,7 @@ At start `~/.tpu.keys`, `./tpu.keys` and the file from `-keys` or `TPU_KEYS` are
 
 ## Tests
 
-    LANG=C.UTF-8 python3 TPU/tests/ptytest.py $PWD/build-tpu/tpu /tmp/tpu-w
+    LANG=C.UTF-8 python3 tests/ptytest.py $PWD/build-tpu/tpu /tmp/tpu-w
 
 Both paths must be absolute: the test starts the editor with the scratch directory as its working directory.
 
@@ -97,7 +96,7 @@ Drives the editor in a pseudo-terminal through 25 scenarios (79 checks): editing
 cut and paste, DO commands, the EDT keypad compared with EDT on VMS (LINE, OPEN LINE, CHNGCASE, DEL EOL), kill -9 and `-recover`, SIGWINCH resize, two windows, REPLACE,
 UTF-8, recall, WILDCARD FIND, case-insensitive Cyrillic search and replace.
 
-    LANG=C.UTF-8 python3 TPU/tests/esctest.py $PWD/build-tpu/tpu /tmp/tpu-e [<yaVTERM build dir> | ssh | ssh:<host>]
+    LANG=C.UTF-8 python3 tests/esctest.py $PWD/build-tpu/tpu /tmp/tpu-e [<yaVTERM build dir> | ssh | ssh:<host>]
 
 Keys whose escape sequence arrives split in time, ESC first and the rest 30 to 200 ms later, as a tunnel or a slow
 line delivers it: arrows in both forms, Home, End, Delete, KP-, and Esc as GOLD followed by a letter fast or slow;
